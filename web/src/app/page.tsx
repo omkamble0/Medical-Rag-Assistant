@@ -40,6 +40,7 @@ export default function Home() {
   const [result, setResult] = useState<SearchResponse | null>(null);
   const [patientResult, setPatientResult] = useState<SearchResponse | null>(null);
 
+
   // Autocomplete state
   const [isFocused, setIsFocused] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState<SearchSuggestion[]>([]);

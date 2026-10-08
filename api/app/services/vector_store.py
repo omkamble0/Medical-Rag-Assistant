@@ -14,19 +14,25 @@ from app.models.enums import EvidenceLevel
 # Oxford CEBM Hierarchy Multipliers (Strict Clinical Weighting)
 # Level 1 (Meta-Analyses/Systematic Reviews) outranks expert opinions
 # ============================================================
-CEBM_WEIGHTS: Dict[EvidenceLevel, float] = {
-    EvidenceLevel.LEVEL_1: 1.20,  # Systematic Review / Meta-Analysis
-    EvidenceLevel.LEVEL_2: 1.10,  # Multi-Center RCT
-    EvidenceLevel.LEVEL_3: 1.00,  # Prospective Cohort / Case-Control
-    EvidenceLevel.LEVEL_4: 0.85,  # Observational / Case Series
-    EvidenceLevel.LEVEL_5: 0.75,  # Expert Opinion / Clinical Practice Guideline
+CEBM_WEIGHTS: Dict[Any, float] = {
+    EvidenceLevel.LEVEL_1: 1.08,
+    EvidenceLevel.LEVEL_2: 1.05,
+    EvidenceLevel.LEVEL_3: 1.00,
+    EvidenceLevel.LEVEL_4: 0.95,
+    EvidenceLevel.LEVEL_5: 0.90,
+    "Level 1 (Meta-Analysis / Systematic Review)": 1.08,
+    "Level 2 (Randomized Controlled Trial)": 1.05,
+    "Level 3 (Cohort / Case-Control Study)": 1.00,
+    "Level 4 (Case Series / Observational)": 0.95,
+    "Level 5 (Expert Opinion / Clinical Guideline)": 0.90,
 }
+
 
 # ============================================================
 # Comprehensive Peer-Reviewed Clinical Knowledge Base (55+ Conditions)
 # Tagged with explicit Domain Clusters to prevent specialty context bleed
 # ============================================================
-CLINICAL_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
+SEED_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
 
     # ── 1. INFECTIOUS DISEASE & VIROLOGY ────────────────────────
     {
@@ -412,9 +418,62 @@ class DenseSemanticScorer:
         return sorted(scores, key=lambda x: x[1], reverse=True)
 
 
-# Initialize singleton retrieval indexes
+
+# ============================================================
+# Dynamic Unified Corpus & Index Management
+# ============================================================
+def get_all_documents() -> List[Dict[str, Any]]:
+    """Merges built-in seed documents with dynamically imported documents."""
+    try:
+        from app.services.knowledge_manager import load_imported_documents
+        imported = load_imported_documents()
+    except Exception:
+        imported = []
+    
+    # Deduplicate by id or doi
+    seen_ids = set()
+    combined = []
+    for doc in SEED_KNOWLEDGE_BASE + imported:
+        d_id = doc.get("id")
+        if d_id and d_id in seen_ids:
+            continue
+        if d_id:
+            seen_ids.add(d_id)
+        combined.append(doc)
+    return combined
+
+
+# Global dynamic corpus reference
+CLINICAL_KNOWLEDGE_BASE = get_all_documents()
 _BM25_INDEX = BM25Index(CLINICAL_KNOWLEDGE_BASE)
 _DENSE_SCORER = DenseSemanticScorer(CLINICAL_KNOWLEDGE_BASE)
+
+
+def refresh_indexes() -> int:
+    """Rebuilds the BM25 and Dense vector indexes when new diseases are imported."""
+    global CLINICAL_KNOWLEDGE_BASE, _BM25_INDEX, _DENSE_SCORER
+    CLINICAL_KNOWLEDGE_BASE = get_all_documents()
+    _BM25_INDEX = BM25Index(CLINICAL_KNOWLEDGE_BASE)
+    _DENSE_SCORER = DenseSemanticScorer(CLINICAL_KNOWLEDGE_BASE)
+    return len(CLINICAL_KNOWLEDGE_BASE)
+
+
+def get_corpus_stats() -> Dict[str, Any]:
+    """Returns total count and domain distribution of indexed clinical papers."""
+    docs = get_all_documents()
+    domains: Dict[str, int] = {}
+    evidence_levels: Dict[str, int] = {}
+    for d in docs:
+        dom = d.get("domain", "GENERAL_MEDICINE")
+        domains[dom] = domains.get(dom, 0) + 1
+        ev = str(d.get("evidence_level", "LEVEL_1"))
+        evidence_levels[ev] = evidence_levels.get(ev, 0) + 1
+
+    return {
+        "total_documents": len(docs),
+        "domains": domains,
+        "evidence_levels": evidence_levels
+    }
 
 
 def retrieve_clinical_evidence(
@@ -426,54 +485,75 @@ def retrieve_clinical_evidence(
     """
     Executes Hybrid Search combining BM25 sparse retrieval and Dense Semantic similarity
     via Reciprocal Rank Fusion (RRF), modulated by Oxford CEBM evidence weighting.
-    Enforces strict domain cluster isolation to eliminate cross-specialty context bleed.
+    Automatically applies Layperson-to-Clinical query expansion.
     """
     clean_query = query.strip()
     if not clean_query:
         return []
 
-    query_tokens = _tokenize(clean_query)
+    # Step 1 & 2: Layperson-to-Clinical Translation & Augmented Hybrid Query
+    try:
+        from app.core.query_parser import expand_layperson_query
+        exp = expand_layperson_query(clean_query)
+        augmented_query = exp.augmented_query or clean_query
+        clinical_synonyms = exp.clinical_synonyms
+    except Exception:
+        augmented_query = clean_query
+        clinical_synonyms = []
+
+    query_tokens = _tokenize(augmented_query)
+    for syn in clinical_synonyms:
+        query_tokens.extend(_tokenize(syn))
     expanded_tokens = _expand_query_tokens(query_tokens)
 
-    # 1. Sparse BM25 Ranking
+    # 1. Sparse BM25 Ranking (only positive score docs receive a rank)
     bm25_ranked = _BM25_INDEX.score(expanded_tokens)
-    sparse_ranks: Dict[int, int] = {doc_id: rank for rank, (doc_id, score) in enumerate(bm25_ranked, start=1)}
+    positive_bm25 = [item for item in bm25_ranked if item[1] > 0.001]
+    sparse_ranks: Dict[int, int] = {doc_id: rank for rank, (doc_id, score) in enumerate(positive_bm25, start=1)}
 
-    # 2. Dense Semantic Ranking
-    dense_ranked = _DENSE_SCORER.score(clean_query)
-    dense_ranks: Dict[int, int] = {doc_id: rank for rank, (doc_id, score) in enumerate(dense_ranked, start=1)}
+    # 2. Dense Semantic Ranking (only positive match docs receive a rank)
+    dense_ranked = _DENSE_SCORER.score(augmented_query)
+    positive_dense = [item for item in dense_ranked if item[1] > 0.01]
+    dense_ranks: Dict[int, int] = {doc_id: rank for rank, (doc_id, score) in enumerate(positive_dense, start=1)}
+
 
     # 3. Reciprocal Rank Fusion (RRF) with Oxford CEBM Hierarchy Multiplier
-    # Formula: Score(d) = CEBM_Multiplier(d) * [ 1/(k + rank_sparse) + 1/(k + rank_dense) ]
+    # Formula: Score(d) = CEBM_Multiplier(d) * [ (1/(k + rank_sparse) if match) + (1/(k + rank_dense) if match) ]
     fused_scores: List[Tuple[int, float, Dict[str, Any]]] = []
 
     for doc_id, doc in enumerate(CLINICAL_KNOWLEDGE_BASE):
-        r_sparse = sparse_ranks.get(doc_id, len(CLINICAL_KNOWLEDGE_BASE))
-        r_dense = dense_ranks.get(doc_id, len(CLINICAL_KNOWLEDGE_BASE))
+        has_sparse = doc_id in sparse_ranks
+        has_dense = doc_id in dense_ranks
 
-        # Check raw relevance so unmentioned documents with zero lexical/semantic score don't pass
+        if not has_sparse and not has_dense:
+            continue  # Truly unrelated to query
+
+        r_sparse = sparse_ranks.get(doc_id, 999)
+        r_dense = dense_ranks.get(doc_id, 999)
+
+        rrf_sparse = (1.0 / (rrf_k + r_sparse)) if has_sparse else 0.0
+        rrf_dense = (1.0 / (rrf_k + r_dense)) if has_dense else 0.0
+        
+        # Raw score bonus for strong direct hits
         bm25_raw = next((s for d, s in bm25_ranked if d == doc_id), 0.0)
         dense_raw = next((s for d, s in dense_ranked if d == doc_id), 0.0)
+        raw_bonus = (min(1.0, bm25_raw / 15.0) * 0.015) + (dense_raw * 0.015)
 
-        if bm25_raw <= 0.001 and dense_raw <= 0.01:
-            continue  # Filter out totally unrelated documents
-
-        rrf_score = (1.0 / (rrf_k + r_sparse)) + (1.0 / (rrf_k + r_dense))
-        cebm_mult = CEBM_WEIGHTS.get(doc["evidence_level"], 1.0)
-        final_score = rrf_score * cebm_mult
+        rrf_total = (rrf_sparse + rrf_dense + raw_bonus)
+        cebm_mult = CEBM_WEIGHTS.get(doc.get("evidence_level"), 1.0)
+        final_score = rrf_total * cebm_mult
 
         if final_score >= relevance_threshold:
             fused_scores.append((doc_id, final_score, doc))
 
-    # Sort descending by CEBM-weighted RRF score
+    # Sort descending by CEBM-weighted score
     fused_scores.sort(key=lambda x: x[1], reverse=True)
 
     if not fused_scores:
         return []  # No hallucinated/unrelated fallbacks
 
+
     # 4. Strict Domain Cluster Isolation (Eliminate Context Bleed)
-    # If the top document belongs to a specific domain (e.g. INFECTIOUS_DISEASE),
-    # all secondary documents MUST match that domain or possess high direct semantic affinity.
     primary_domain = fused_scores[0][2].get("domain")
     isolated_candidates: List[Tuple[int, float, Dict[str, Any]]] = []
 
@@ -483,7 +563,6 @@ def retrieve_clinical_evidence(
             isolated_candidates.append((doc_id, score, doc))
         else:
             # Only allow cross-domain if query explicitly tokens multiple specialties
-            # and score is strictly > 80% of top score
             if score >= (fused_scores[0][1] * 0.85):
                 isolated_candidates.append((doc_id, score, doc))
 
@@ -512,3 +591,4 @@ def retrieve_clinical_evidence(
         )
 
     return result
+

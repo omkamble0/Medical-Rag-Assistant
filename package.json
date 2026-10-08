@@ -4,9 +4,9 @@
   "private": true,
   "description": "Dual-Perspective Clinical RAG Navigator with Oxford CEBM Grounding & Tier-1 Safety Guardrails",
   "scripts": {
-    "dev": "concurrently -n \"BACKEND,FRONTEND,BROWSER\" -c \"teal.bold,cyan.bold,green.bold\" \"cd api && python -m uvicorn app.main:app --reload --port 8000\" \"cd web && npm run dev\" \"node scripts/open-browser.js\"",
-    "start": "npm run dev",
-    "dev:no-open": "concurrently -n \"BACKEND,FRONTEND\" -c \"teal.bold,cyan.bold\" \"cd api && python -m uvicorn app.main:app --reload --port 8000\" \"cd web && npm run dev\"",
+    "dev": "node scripts/start-all.js",
+    "start": "node scripts/start-all.js",
+    "dev:no-open": "concurrently -n \"BACKEND,FRONTEND\" -c \"teal.bold,cyan.bold\" \"cd api && python -m uvicorn app.main:app --port 8000\" \"cd web && npm run dev\"",
     "dev:api": "cd api && python -m uvicorn app.main:app --reload --port 8000",
     "dev:web": "cd web && npm run dev",
     "install:all": "npm install && cd web && npm install"

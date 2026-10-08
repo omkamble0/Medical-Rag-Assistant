@@ -11,6 +11,19 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 
 
+class ExpandedClinicalQuery(BaseModel):
+    original_intent: str = Field(..., description="The user's query intent in plain text")
+    clinical_synonyms: List[str] = Field(
+        ..., 
+        description="Standardized medical terminology, diagnoses, or drug classes related to the layperson query (e.g., 'Acute Viral Upper Respiratory Infection' for 'cold')"
+    )
+    is_common_ailment: bool = Field(..., description="True if this is a low-acuity primary care issue like a cold, minor sprain, or tension headache")
+    augmented_query: Optional[str] = Field(
+        default=None,
+        description="Hybrid search query combining raw layperson terms with clinical guideline synonyms"
+    )
+
+
 class Demographics(BaseModel):
     age_group: Optional[str] = Field(None, description="pediatric, adult, geriatric, or unspecified")
     pregnancy_status: Optional[str] = Field(None, description="pregnant, postpartum, non-pregnant, or unspecified")
@@ -27,6 +40,10 @@ class ClinicalEntities(BaseModel):
 class ParsedQueryAnalysis(BaseModel):
     raw_query: str
     entities: ClinicalEntities
+    expanded_query: Optional[ExpandedClinicalQuery] = Field(
+        default=None,
+        description="Layperson-to-Clinical query expansion with standardized scientific nomenclature"
+    )
     missing_variables: List[str] = Field(
         default_factory=list,
         description="Clinical variables required by guidelines but omitted in the query"
@@ -43,6 +60,305 @@ class ParsedQueryAnalysis(BaseModel):
         default_factory=list,
         description="Guided prompt options to disambiguate the clinical situation"
     )
+
+
+# --- Comprehensive Layperson-to-Clinical Medical Lexicon & Ontology ---
+LAYPERSON_CLINICAL_MAP: List[Dict[str, Any]] = [
+    {
+        "patterns": [r"\b(cold|common cold|head cold|runny nose|sneezing|stuffy nose|nasal drip)\b"],
+        "clinical_synonyms": ["Acute Viral Upper Respiratory Infection", "Acute Rhinosinusitis", "Coryza", "Nasopharyngitis", "Viral Rhinitis"],
+        "is_common_ailment": True,
+        "primary_label": "Acute Viral Upper Respiratory Infection (Common Cold)"
+    },
+    {
+        "patterns": [
+            r"\b(throw up and the runs|throwing up and diarrhea|vomiting and diarrhea|stomach bug|stomach flu|food poisoning|tummy bug|vomiting and runs|puking and diarrhea)\b",
+            r"\b(throw up|throwing up|puking|vomiting)\b.*\b(runs|diarrhea|loose stools|watery poop)\b",
+            r"\b(runs|diarrhea|loose stools)\b.*\b(throw up|throwing up|puking|vomiting)\b"
+        ],
+        "clinical_synonyms": [
+            "Acute Gastroenteritis",
+            "Viral Enteritis (Norovirus / Rotavirus)",
+            "Infectious Diarrheal Colitis",
+            "Acute Dehydration & Fluid Loss",
+            "Oral Rehydration Therapy (ORT)"
+        ],
+        "is_common_ailment": True,
+        "primary_label": "Acute Infectious Gastroenteritis"
+    },
+    {
+        "patterns": [r"\b(heart attack|chest clutching|crushing chest pain|coronary|clogged artery in heart|stent in heart)\b"],
+        "clinical_synonyms": [
+            "Acute Coronary Syndrome (ACS)",
+            "Non-ST-Elevation Acute Coronary Syndrome (NSTEMI / Unstable Angina)",
+            "ST-Elevation Myocardial Infarction (STEMI)",
+            "High-Sensitivity Cardiac Troponin (hs-cTn)"
+        ],
+        "is_common_ailment": False,
+        "primary_label": "Acute Coronary Syndrome (Myocardial Infarction)"
+    },
+    {
+        "patterns": [r"\b(pink eye|red eye|crusty eye|goopy eye|eye discharge|eye infection)\b"],
+        "clinical_synonyms": ["Acute Conjunctivitis", "Bacterial Conjunctivitis", "Viral Conjunctivitis", "Allergic Conjunctivitis"],
+        "is_common_ailment": True,
+        "primary_label": "Acute Conjunctivitis"
+    },
+    {
+        "patterns": [r"\b(hives|welts|itchy bumps|nettle rash|wheals)\b"],
+        "clinical_synonyms": ["Chronic Spontaneous Urticaria", "Acute Urticaria", "Second-Generation Antihistamines", "Omalizumab"],
+        "is_common_ailment": True,
+        "primary_label": "Chronic Spontaneous Urticaria"
+    },
+    {
+        "patterns": [r"\b(strep throat|sore throat|scratchy throat|throat pain|swollen tonsils)\b"],
+        "clinical_synonyms": ["Acute Pharyngitis", "Group A Streptococcal Pharyngitis", "Centor Score Criteria", "Tonsillitis"],
+        "is_common_ailment": True,
+        "primary_label": "Acute Streptococcal Pharyngitis"
+    },
+    {
+        "patterns": [r"\b(water infection|bladder infection|burning pee|painful urination|peeing glass|urine infection|uti)\b"],
+        "clinical_synonyms": ["Urinary Tract Infection (UTI)", "Acute Uncomplicated Cystitis", "Nitrofurantoin / TMP-SMX", "Pyelonephritis"],
+        "is_common_ailment": True,
+        "primary_label": "Urinary Tract Infection (Acute Cystitis)"
+    },
+    {
+        "patterns": [r"\b(kidney stone|kidney stones|passing a stone|renal stone|back flank pain)\b"],
+        "clinical_synonyms": ["Nephrolithiasis", "Urolithiasis", "Renal Colic", "Non-Contrast CT Abdomen/Pelvis", "Tamsulosin Medical Expulsive Therapy"],
+        "is_common_ailment": False,
+        "primary_label": "Nephrolithiasis (Kidney Stones)"
+    },
+    {
+        "patterns": [r"\b(sugar disease|high blood sugar|sweet pee|diabetes|diabetic)\b"],
+        "clinical_synonyms": ["Type 2 Diabetes Mellitus", "Hyperglycemia", "HbA1c Target <7.0%", "Metformin / GLP-1 Receptor Agonists", "SGLT2 Inhibitors"],
+        "is_common_ailment": False,
+        "primary_label": "Type 2 Diabetes Mellitus"
+    },
+    {
+        "patterns": [r"\b(high blood pressure|high bp|hypertension|tight blood vessels)\b"],
+        "clinical_synonyms": ["Essential Hypertension", "Stage 1 / Stage 2 Arterial Hypertension", "Amlodipine / Lisinopril / ARB", "DASH Diet & Sodium Restriction"],
+        "is_common_ailment": False,
+        "primary_label": "Essential Hypertension"
+    },
+    {
+        "patterns": [r"\b(wheezing|asthma attack|short of breath|trouble breathing|winded|inhaler)\b"],
+        "clinical_synonyms": ["Bronchial Asthma", "Acute Bronchospasm", "Inhaled Corticosteroid-Formoterol (SMART)", "Chronic Obstructive Pulmonary Disease (COPD)"],
+        "is_common_ailment": False,
+        "primary_label": "Bronchial Asthma / COPD"
+    },
+    {
+        "patterns": [r"\b(stroke|brain bleed|face drooping|slurred speech|weak arm on one side|mini stroke|tia)\b"],
+        "clinical_synonyms": ["Acute Ischemic Stroke", "Transient Ischemic Attack (TIA)", "Intravenous Thrombolysis (Alteplase / Tenecteplase)", "Endovascular Thrombectomy"],
+        "is_common_ailment": False,
+        "primary_label": "Acute Ischemic Stroke"
+    },
+    {
+        "patterns": [r"\b(blood clot in leg|swollen red calf|clot in lungs|dvt|pulmonary embolus|blood clot)\b"],
+        "clinical_synonyms": ["Deep Vein Thrombosis (DVT)", "Pulmonary Embolism (PE)", "Venous Thromboembolism (VTE)", "Direct Oral Anticoagulants (DOACs - Apixaban/Rivaroxaban)"],
+        "is_common_ailment": False,
+        "primary_label": "Venous Thromboembolism (DVT / PE)"
+    },
+    {
+        "patterns": [r"\b(restless legs|jumpy legs at night|crawling sensation in legs|ants in legs)\b"],
+        "clinical_synonyms": ["Restless Legs Syndrome (RLS)", "Willis-Ekbom Disease", "Serum Ferritin Deficiency (<75 ng/mL)", "Alpha-2-Delta Ligands (Pregabalin / Gabapentin)"],
+        "is_common_ailment": True,
+        "primary_label": "Restless Legs Syndrome (RLS)"
+    },
+    {
+        "patterns": [r"\b(joint wear and tear|clicking knees|bone on bone|worn out hip|cartilage loss)\b"],
+        "clinical_synonyms": ["Osteoarthritis (OA)", "Degenerative Joint Disease", "Topical NSAIDs / Exercise Therapy", "Total Knee / Hip Arthroplasty"],
+        "is_common_ailment": True,
+        "primary_label": "Osteoarthritis (OA)"
+    },
+    {
+        "patterns": [r"\b(gout|red swollen big toe|uric acid flare|crystals in joint)\b"],
+        "clinical_synonyms": ["Acute Gout Flare", "Gouty Arthritis", "Colchicine / NSAIDs / Corticosteroids", "Allopurinol Urate-Lowering Therapy (Target <6.0 mg/dL)"],
+        "is_common_ailment": False,
+        "primary_label": "Gout & Hyperuricemia"
+    },
+    {
+        "patterns": [r"\b(acid reflux|heartburn|sour stomach|acid coming up throat|gerd|indigestion)\b"],
+        "clinical_synonyms": ["Gastroesophageal Reflux Disease (GERD)", "Reflux Esophagitis", "Proton Pump Inhibitors (PPI - Omeprazole)", "H2 Receptor Antagonists"],
+        "is_common_ailment": True,
+        "primary_label": "Gastroesophageal Reflux Disease (GERD)"
+    },
+    {
+        "patterns": [r"\b(low thyroid|sluggish thyroid|slow metabolism|cold sensitivity and weight gain)\b"],
+        "clinical_synonyms": ["Primary Hypothyroidism", "Hashimoto Thyroiditis", "Serum TSH Elevation", "Levothyroxine Sodium Monotherapy"],
+        "is_common_ailment": False,
+        "primary_label": "Primary Hypothyroidism"
+    },
+    {
+        "patterns": [r"\b(shingles|painful rash on one side|blisters in stripe|nerve pain after rash)\b"],
+        "clinical_synonyms": ["Herpes Zoster", "Postherpetic Neuralgia (PHN)", "Oral Valacyclovir / Famciclovir", "Recombinant Zoster Vaccine (Shingrix)"],
+        "is_common_ailment": False,
+        "primary_label": "Herpes Zoster (Shingles)"
+    },
+    {
+        "patterns": [r"\b(memory loss|forgetfulness|getting lost|senility|dementia|alzheimers)\b"],
+        "clinical_synonyms": ["Early Alzheimer's Disease", "Mild Cognitive Impairment (MCI)", "Amyloid-Beta Monoclonal Antibodies (Lecanemab / Donanemab)", "Cholinesterase Inhibitors (Donepezil)"],
+        "is_common_ailment": False,
+        "primary_label": "Early Alzheimer's Disease & Cognitive Impairment"
+    },
+    {
+        "patterns": [r"\b(eczema|atopic skin|itchy dry red patches|skin creases rash)\b"],
+        "clinical_synonyms": ["Atopic Dermatitis (Eczema)", "Skin Barrier Dysfunction", "Topical Corticosteroids / Calcineurin Inhibitors", "Dupilumab Biologic Therapy"],
+        "is_common_ailment": True,
+        "primary_label": "Atopic Dermatitis (Eczema)"
+    },
+    {
+        "patterns": [r"\b(psoriasis|silvery scaly patches|thick red skin plaques|elbow and knee plaques)\b"],
+        "clinical_synonyms": ["Plaque Psoriasis", "Psoriatic Disease", "Topical Corticosteroid / Calcipotriene", "IL-17 / IL-23 / TNF Biologics"],
+        "is_common_ailment": False,
+        "primary_label": "Plaque Psoriasis"
+    },
+    {
+        "patterns": [r"\b(appendix|belly button pain moving to right|right lower belly pain|burst appendix)\b"],
+        "clinical_synonyms": ["Acute Appendicitis", "Laparoscopic Appendectomy", "Alvarado / AIR Score", "Abdominal CT / Ultrasound Evaluation"],
+        "is_common_ailment": False,
+        "primary_label": "Acute Appendicitis"
+    },
+    {
+        "patterns": [r"\b(diverticulitis|left lower belly pain|pockets in colon|colon pouch inflammation)\b"],
+        "clinical_synonyms": ["Acute Colonic Diverticulitis", "Uncomplicated vs Complicated Diverticulitis (Hinchey)", "Abdominal CT with IV Contrast", "Colonoscopy 6-8 Weeks Post-Resolution"],
+        "is_common_ailment": False,
+        "primary_label": "Acute Diverticulitis"
+    },
+    {
+        "patterns": [r"\b(throat closing|severe allergic reaction|anaphylaxis|nut reaction|sting reaction)\b"],
+        "clinical_synonyms": ["Systemic Anaphylaxis", "Intramuscular Epinephrine (Anterolateral Thigh)", "Biphasic Allergic Reaction", "Airway & Hemodynamic Compromise"],
+        "is_common_ailment": False,
+        "primary_label": "Anaphylaxis"
+    },
+    {
+        "patterns": [r"\b(macular degeneration|wavy straight lines|blank spot in center vision|wet amd|dry amd)\b"],
+        "clinical_synonyms": ["Age-Related Macular Degeneration (AMD)", "Neovascular / Wet AMD", "Intravitreal Anti-VEGF (Aflibercept / Ranibizumab)", "AREDS2 Antioxidant Formulation"],
+        "is_common_ailment": False,
+        "primary_label": "Age-Related Macular Degeneration (AMD)"
+    },
+    {
+        "patterns": [r"\b(glaucoma|high eye pressure|tunnel vision|losing side vision)\b"],
+        "clinical_synonyms": ["Primary Open-Angle Glaucoma (POAG)", "Intraocular Pressure (IOP) Reduction", "Topical Prostaglandin Analogs (Latanoprost)", "Selective Laser Trabeculoplasty (SLT)"],
+        "is_common_ailment": False,
+        "primary_label": "Primary Open-Angle Glaucoma (POAG)"
+    },
+    {
+        "patterns": [r"\b(temple headache|jaw pain chewing|pain on side of scalp|blindness in one eye older adult)\b"],
+        "clinical_synonyms": ["Giant Cell Arteritis (Temporal Arteritis)", "Erythrocyte Sedimentation Rate (ESR) / CRP Elevation", "High-Dose Systemic Glucocorticoids", "Tocilizumab IL-6 Receptor Antagonist"],
+        "is_common_ailment": False,
+        "primary_label": "Giant Cell Arteritis (Temporal Arteritis)"
+    },
+    {
+        "patterns": [r"\b(bell's palsy|one side face paralyzed|face droop cannot close eye|droopy smile)\b"],
+        "clinical_synonyms": ["Idiopathic Facial Paralysis (Bell's Palsy)", "Oral Corticosteroids (Prednisone within 72h)", "Corneal Lubrication & Eye Taping", "Facial Nerve (CN VII) Neuropathy"],
+        "is_common_ailment": True,
+        "primary_label": "Bell's Palsy (Idiopathic Facial Paralysis)"
+    },
+    {
+        "patterns": [r"\b(carpal tunnel|numb hand at night|tingling thumb index|wrist splint|dropping things)\b"],
+        "clinical_synonyms": ["Carpal Tunnel Syndrome (CTS)", "Median Nerve Compression", "Nocturnal Neutral-Angle Wrist Splinting", "Electromyography / Nerve Conduction Study (EMG/NCS)"],
+        "is_common_ailment": True,
+        "primary_label": "Carpal Tunnel Syndrome"
+    },
+    {
+        "patterns": [r"\b(concussion|bumped head dizzy|head knock sports|post concussion)\b"],
+        "clinical_synonyms": ["Mild Traumatic Brain Injury (mTBI / Concussion)", "Graduated Return-to-Learn / Return-to-Play", "SCAT5 / SCAT6 Protocol", "Avoidance of Prolonged Cocooning"],
+        "is_common_ailment": True,
+        "primary_label": "Mild Traumatic Brain Injury (Concussion)"
+    },
+    {
+        "patterns": [r"\b(hay fever|seasonal allergy|pollen allergy|itchy eyes and sneezing in spring)\b"],
+        "clinical_synonyms": ["Allergic Rhinitis", "Intranasal Corticosteroids (Fluticasone / Budesonide)", "Second-Generation Oral Antihistamines", "Allergen Immunotherapy"],
+        "is_common_ailment": True,
+        "primary_label": "Allergic Rhinitis"
+    },
+    {
+        "patterns": [r"\b(pimples|zits|blackheads|cystic acne|skin breakouts|acne scars)\b"],
+        "clinical_synonyms": ["Acne Vulgaris", "Topical Retinoids (Adapalene / Tretinoin)", "Benzoyl Peroxide", "Oral Isotretinoin for Nodulocystic Acne"],
+        "is_common_ailment": True,
+        "primary_label": "Acne Vulgaris"
+    },
+    {
+        "patterns": [r"\b(stiff shoulders in morning|aching hips older adult|cannot lift arms morning stiffness)\b"],
+        "clinical_synonyms": ["Polymyalgia Rheumatica (PMR)", "Low-Dose Systemic Glucocorticoids (Prednisone)", "ESR / CRP Inflammatory Markers", "Screening for Giant Cell Arteritis"],
+        "is_common_ailment": False,
+        "primary_label": "Polymyalgia Rheumatica (PMR)"
+    },
+    {
+        "patterns": [r"\b(thyroid lump|neck knot|swollen gland in neck|thyroid nodule)\b"],
+        "clinical_synonyms": ["Thyroid Nodule Evaluation", "Serum TSH & Diagnostic Neck Ultrasound", "Fine-Needle Aspiration (FNA) Biopsy", "Bethesda System for Thyroid Cytopathology"],
+        "is_common_ailment": False,
+        "primary_label": "Thyroid Nodule"
+    },
+    {
+        "patterns": [r"\b(ectopic pregnancy|tubal pregnancy|positive pregnancy test sharp pelvic pain|cramping and bleeding positive test)\b"],
+        "clinical_synonyms": ["Tubal Ectopic Pregnancy", "Transvaginal Ultrasound (TVUS) & Serial Beta-hCG", "Intramuscular Methotrexate Medical Management", "Emergency Laparoscopic Salpingectomy"],
+        "is_common_ailment": False,
+        "primary_label": "Tubal Ectopic Pregnancy"
+    },
+    {
+        "patterns": [r"\b(bleeding after menopause|spotting years after period|postmenopausal bleeding)\b"],
+        "clinical_synonyms": ["Postmenopausal Bleeding (PMB)", "Transvaginal Ultrasound (Endometrial Stripe ≤4 mm)", "Endometrial Biopsy", "Endometrial Hyperplasia / Carcinoma Screening"],
+        "is_common_ailment": False,
+        "primary_label": "Postmenopausal Bleeding & Endometrial Hyperplasia"
+    },
+    {
+        "patterns": [r"\b(erectile dysfunction|impotence|trouble getting hard|cannot maintain erection)\b"],
+        "clinical_synonyms": ["Erectile Dysfunction (ED)", "Phosphodiesterase-5 Inhibitors (PDE5i - Sildenafil / Tadalafil)", "Cardiovascular ASCVD Risk Screening", "Absolute Nitrate Contraindication"],
+        "is_common_ailment": True,
+        "primary_label": "Erectile Dysfunction (ED)"
+    },
+    {
+        "patterns": [r"\b(high potassium|too much potassium in blood|elevated k\+|potassium spike)\b"],
+        "clinical_synonyms": ["Hyperkalemia (Serum K+ ≥6.5 mEq/L or ECG changes)", "Intravenous Calcium Gluconate (Myocardial Stabilization)", "Intravenous Regular Insulin + Dextrose (Intracellular Shift)", "GI Potassium Binders / Emergent Hemodialysis"],
+        "is_common_ailment": False,
+        "primary_label": "Hyperkalemia"
+    },
+]
+
+
+def expand_layperson_query(raw_query: str) -> ExpandedClinicalQuery:
+    """
+    Step 1: Layperson-to-Clinical Translator Engine.
+    Maps conversational, everyday patient language ('cold', 'stomach bug', 'throw up and the runs')
+    to standardized, CEBM Level 1 clinical nomenclatures and guideline entities.
+    """
+    clean_q = raw_query.strip()
+    q_low = clean_q.lower()
+    
+    collected_synonyms: List[str] = []
+    is_common = False
+    
+    for item in LAYPERSON_CLINICAL_MAP:
+        matched = False
+        for pat in item["patterns"]:
+            if re.search(pat, q_low, re.IGNORECASE):
+                matched = True
+                break
+        if matched:
+            for syn in item["clinical_synonyms"]:
+                if syn not in collected_synonyms:
+                    collected_synonyms.append(syn)
+            if item.get("is_common_ailment"):
+                is_common = True
+    
+    # If no specialized colloquial match found, synthesize baseline clinical synonyms from tokens
+    if not collected_synonyms:
+        # Fallback to standard token extraction
+        tokens = [w for w in re.findall(r"\b[a-zA-Z]{3,}\b", clean_q)]
+        collected_synonyms = [f"Clinical evaluation of {t}" for t in tokens[:3]]
+        is_common = False
+    
+    # Assemble augmented hybrid query
+    synonym_suffix = " ".join(collected_synonyms[:4])
+    augmented = f"{clean_q} {synonym_suffix}".strip()
+    
+    return ExpandedClinicalQuery(
+        original_intent=clean_q,
+        clinical_synonyms=collected_synonyms,
+        is_common_ailment=is_common,
+        augmented_query=augmented
+    )
+
 
 
 # --- Clinical Knowledge Maps for Parsing & Gap Detection ---
@@ -278,9 +594,16 @@ def detect_missing_variables_and_gaps(
 def parse_clinical_query(query: str) -> ParsedQueryAnalysis:
     """
     Main entry point for Stage 1 Inbound Analysis.
-    Deconstructs the raw query, extracts entities, and detects missing clinical parameters.
+    Deconstructs the raw query, maps layperson terminology to scientific clinical standards,
+    extracts entities, and detects missing clinical parameters.
     """
+    expanded_query = expand_layperson_query(query)
     entities = extract_clinical_entities(query)
+    
+    # If primary condition was not matched by strict patterns, derive from clinical synonyms
+    if not entities.primary_condition and expanded_query.clinical_synonyms:
+        entities.primary_condition = expanded_query.clinical_synonyms[0]
+
     missing_vars, context_gaps, clarifications = detect_missing_variables_and_gaps(query, entities)
 
     requires_disambiguation = len(missing_vars) > 0 or len(context_gaps) > 0
@@ -288,8 +611,10 @@ def parse_clinical_query(query: str) -> ParsedQueryAnalysis:
     return ParsedQueryAnalysis(
         raw_query=query,
         entities=entities,
+        expanded_query=expanded_query,
         missing_variables=missing_vars,
         context_gaps=context_gaps,
         requires_disambiguation=requires_disambiguation,
         recommended_clarifications=clarifications,
     )
+
