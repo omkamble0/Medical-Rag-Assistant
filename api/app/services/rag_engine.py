@@ -9,7 +9,13 @@ from app.models.schemas import (
 )
 from app.core.guardrails import evaluate_safety_guardrails
 from app.core.query_parser import parse_clinical_query
-from app.core.prompts import build_clinician_prompt, build_patient_prompt
+from app.core.prompts import (
+    route_prompt,
+    build_clinician_prompt,
+    build_patient_prompt,
+    PATIENT_PROMPT,
+    CLINICIAN_PROMPT
+)
 from app.core.evaluator import evaluate_grounding_and_confidence
 from app.services.vector_store import retrieve_clinical_evidence
 
@@ -702,12 +708,62 @@ def generate_patient_synthesis(
     return answer, jargon, questions
 
 
+def format_retrieved_context_chunks(sources: List[SourceDocument]) -> str:
+    """Formats retrieved vector document chunks into structured text for prompt injection."""
+    if not sources:
+        return "No relevant clinical evidence found in knowledge store."
+    chunks = []
+    for s in sources:
+        evidence_tier = s.evidence_level.value if hasattr(s.evidence_level, 'value') else str(s.evidence_level)
+        chunks.append(
+            f"[{s.citation_index}] TITLE: {s.title}\n"
+            f"    JOURNAL: {s.journal} ({s.year}) | CEBM EVIDENCE TIER: {evidence_tier}\n"
+            f"    DOI / PMID: {s.doi_or_pmid or 'PMID Indexed'}\n"
+            f"    EVIDENCE SNIPPET: {s.snippet}\n"
+            f"    KEY TAKEAWAY: {s.key_takeaway or 'N/A'}"
+        )
+    return "\n\n".join(chunks)
+
+
+def generate_response(
+    query: str,
+    sources: List[SourceDocument],
+    user_mode: UserMode,
+    parsed_analysis: Optional[ParsedQueryAnalysis] = None
+) -> Tuple[str, str, Optional[List[JargonItem]], Optional[List[DoctorQuestion]], Optional[PatientSuggestion], Optional[ClinicianSuggestion]]:
+    """
+    Executes Dynamic Prompt Routing and synthesizes the final clinical answer.
+    Injects retrieved vector chunks into the selected prompt template (PATIENT_PROMPT vs CLINICIAN_PROMPT).
+    Strictly locks the LLM's vocabulary, statistical density, and tone to the user's active mode.
+    """
+    context_str = format_retrieved_context_chunks(sources)
+    _routed_system_prompt = route_prompt(user_mode, query, context_str)
+
+    if not parsed_analysis:
+        parsed_analysis = parse_clinical_query(query)
+
+    if user_mode == UserMode.PROFESSIONAL:
+        answer = generate_clinician_synthesis(query, sources, parsed_analysis)
+        reading_level = "Grade 16+ (Post-Graduate Clinical Literature)"
+        jargon_list = None
+        doctor_questions = None
+        patient_sug = None
+        clinician_sug = generate_clinician_suggestions(query, sources)
+    else:
+        answer, jargon_list, doctor_questions = generate_patient_synthesis(query, sources, parsed_analysis)
+        reading_level = "Grade 6.0 (Plain English Health Literacy)"
+        patient_sug = generate_patient_suggestions(query, sources, parsed_analysis)
+        clinician_sug = None
+
+    return answer, reading_level, jargon_list, doctor_questions, patient_sug, clinician_sug
+
+
 def process_clinical_query(query: str, user_mode: UserMode) -> SearchResponse:
     """
     Main 4-Stage Clinical Cognitive Pipeline:
     1. Stage 1 (Inbound Analysis): Deconstruct query, extract clinical entities, detect missing clinical parameters, identify context gaps.
     2. Stage 2 (Latent Clinical Thinking): Execute mandatory <clinical_thinking> scratchpad audit.
-    3. Stage 3 (Dual-Register Synthesis): Generate grounded output tailored strictly to active persona without cross-topic contamination.
+    3. Stage 3 (Dual-Register Synthesis via Prompt Router): Generate grounded output tailored strictly to active persona without cross-topic contamination.
     4. Stage 4 (Outbound Question Generation): Formulate structured non-prescriptive doctor consultation questions (P-S-A framework).
     """
     start_time = time.time()
@@ -749,22 +805,19 @@ def process_clinical_query(query: str, user_mode: UserMode) -> SearchResponse:
     # Step 3: Stage 2 Latent Clinical Thinking Scratchpad Audit
     clinical_thinking_block = generate_clinical_thinking_block(query, parsed_analysis, sources, user_mode)
 
-    # Step 4: Stage 3 Dual-Register Synthesis & Structured Suggestions Separation
-    if user_mode == UserMode.PROFESSIONAL:
-        answer = generate_clinician_synthesis(query, sources, parsed_analysis)
-        reading_level = "Grade 16+ (Post-Graduate Clinical Literature)"
-        jargon_list = None
-        doctor_questions = None
-        patient_sug = None
-        clinician_sug = generate_clinician_suggestions(query, sources)
-    else:
-        answer, jargon_list, doctor_questions = generate_patient_synthesis(query, sources, parsed_analysis)
-        reading_level = "Grade 6.2 (Plain English Health Literacy)"
-        patient_sug = generate_patient_suggestions(query, sources, parsed_analysis)
-        clinician_sug = None
+    # Step 4: Stage 3 Dual-Register Synthesis via Dynamic Prompt Router
+    (
+        answer,
+        reading_level,
+        jargon_list,
+        doctor_questions,
+        patient_sug,
+        clinician_sug
+    ) = generate_response(query, sources, user_mode, parsed_analysis)
 
     # Step 5: Evaluate Grounding & Confidence
     confidence, citations = evaluate_grounding_and_confidence(answer, sources)
+
 
     # Step 6: Generate smart leading elaboration options
     elaboration_leadings = get_elaboration_leadings(query, sources)

@@ -50,6 +50,11 @@ export default function Home() {
 
   const hasTopic = Boolean(result || patientResult || loading);
 
+  const searchPlaceholder =
+    mode === "patient"
+      ? "Describe your symptoms or ask a health question..."
+      : "Search clinical guidelines, trials, or treatment protocols...";
+
   // Update suggestions when query changes
   useEffect(() => {
     const list = getMatchingSuggestions(query, 8);
@@ -278,7 +283,7 @@ export default function Home() {
                 onChange={(e) => setQuery(e.target.value)}
                 onFocus={() => setIsFocused(true)}
                 onKeyDown={handleKeyDown}
-                placeholder="Search diseases, symptoms, or treatments (e.g. blood pressure, diabetes, asthma)..."
+                placeholder={searchPlaceholder}
                 className="w-full h-full pl-12 pr-32 sm:pr-36 bg-transparent text-slate-900 placeholder:text-slate-400 text-sm sm:text-base outline-none font-normal"
               />
 
@@ -413,7 +418,7 @@ export default function Home() {
                   onChange={(e) => setQuery(e.target.value)}
                   onFocus={() => setIsFocused(true)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask a follow-up or search another clinical topic..."
+                  placeholder={searchPlaceholder}
                   className="w-full h-full pl-10 pr-28 bg-transparent text-slate-900 placeholder:text-slate-400 text-sm outline-none font-normal"
                 />
 
