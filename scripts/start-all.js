@@ -15,7 +15,7 @@ const isWin = process.platform === "win32";
 
 // 1. Start Python Backend
 const pythonCmd = isWin ? "python" : "python3";
-const backendProcess = spawn(pythonCmd, ["-m", "uvicorn", "app.main:app", "--port", "8000"], {
+const backendProcess = spawn(pythonCmd, ["-m", "uvicorn", "app.main:app", "--port", "8000", "--reload"], {
   cwd: apiDir,
   shell: true,
   stdio: "inherit",
