@@ -247,6 +247,12 @@ export function MedicalQueryPanel() {
                 {result.audience === 'patient' ? 'Patient Synthesis' : 'Clinical Synthesis'}
               </span>
 
+              {result.reading_level && (
+                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                  {result.reading_level}
+                </span>
+              )}
+
               {result.was_corrected && (
                 <span className="px-2 py-0.5 rounded text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30">
                   Auto-Corrected: &quot;{result.effective_query}&quot;

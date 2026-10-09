@@ -9,6 +9,24 @@ router = APIRouter(prefix="/api/v1", tags=["Medical Agentic RAG"])
 guard = QueryGuard()
 rag = MedicalRAGAgent()
 
+def normalize_audience(audience: str) -> str:
+    """
+    Normalize audience value to canonical forms: 'patient' or 'doctor'.
+    Maps variations like 'clinician', 'professional', 'physician', 'md' → 'doctor'.
+    Defaults to 'patient' if None or unrecognized.
+    """
+    if audience is None:
+        return "patient"
+    
+    a = str(audience).strip().lower()
+    
+    # Map all doctor variants to single canonical value
+    if a in {"doctor", "clinician", "professional", "physician", "md", "healthcare_provider"}:
+        return "doctor"
+    
+    # Default to patient for safety
+    return "patient"
+
 class QueryRequest(BaseModel):
     query: str = Field(..., description="User medical query or symptoms description")
     audience: str = Field(default="patient", description="Target audience: 'patient' or 'doctor'")
@@ -35,12 +53,20 @@ async def validate_query_endpoint(payload: ValidateQueryRequest):
 async def medical_query_endpoint(payload: QueryRequest):
     """
     Agentic Medical Pipeline:
-    1. Query Validation Layer: Detects and flags typos (e.g., 'headavhe' -> 'headache')
-    2. Needs Correction check: Prompts user or applies auto-correction
-    3. Retrieval Layer: Context fetched from clinical evidence store
-    4. Generation Layer: Generates patient-tailored or doctor-tailored synthesis with sources
+    1. Normalize audience to 'patient' or 'doctor'
+    2. Query Validation Layer: Detects and flags typos
+    3. Needs Correction check: Prompts user or applies auto-correction
+    4. Retrieval Layer: Context fetched from clinical evidence store
+    5. Generation Layer: Generates patient-tailored or doctor-tailored synthesis with sources
+    
+    STRICT AUDIENCE ENFORCEMENT:
+    - patient: 6th-grade reading level, plain English, no jargon
+    - doctor: graduate-level clinical terminology, statistics, dosing, trial endpoints
     """
     try:
+        # CRITICAL: Normalize audience before any processing
+        normalized_audience = normalize_audience(payload.audience)
+        
         validation = guard.validate(payload.query)
 
         # If typo detected and user has not opted into auto_correct, prompt user
@@ -55,7 +81,9 @@ async def medical_query_endpoint(payload: QueryRequest):
             }
 
         effective_query = validation["corrected"] if validation["needs_correction"] else payload.query
-        response = rag.generate(effective_query, audience=payload.audience)
+        
+        # Generate with NORMALIZED audience (strict enforcement)
+        response = rag.generate(effective_query, audience=normalized_audience)
 
         return {
             "status": "ok",
@@ -64,7 +92,8 @@ async def medical_query_endpoint(payload: QueryRequest):
             "was_corrected": validation["needs_correction"],
             "answer": response["answer"],
             "sources": response["sources"],
-            "audience": payload.audience,
+            "audience": normalized_audience,  # NORMALIZED: always 'patient' or 'doctor'
+            "reading_level": response.get("reading_level", "Grade 6.0" if normalized_audience == "patient" else "Postgraduate Clinical Level"),
             "provider": response.get("provider", "Clinical RAG Agent")
         }
     except Exception as e:

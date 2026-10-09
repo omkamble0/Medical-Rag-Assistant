@@ -2,6 +2,8 @@
 
 import { useState, useCallback } from 'react';
 
+export type Audience = 'patient' | 'doctor';
+
 export interface MedicalSource {
   index: number;
   title: string;
@@ -11,15 +13,15 @@ export interface MedicalSource {
 }
 
 export interface MedicalQueryResponse {
-  status: 'ok' | 'needs_correction' | 'error';
+  status: string;
   original_query?: string;
   effective_query?: string;
   was_corrected?: boolean;
   answer?: string;
   sources?: MedicalSource[];
-  audience?: 'patient' | 'doctor';
+  audience?: Audience;
+  reading_level?: string;
   provider?: string;
-  // Typo correction fields
   original?: string;
   corrected?: string;
   confidence?: number;
@@ -36,13 +38,22 @@ export function useMedicalQuery() {
   const [result, setResult] = useState<MedicalQueryResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const normalizeAudience = (audience: string | undefined): Audience => {
+    if (!audience) return 'patient';
+    const a = audience.trim().toLowerCase();
+    if (['doctor', 'clinician', 'professional', 'physician', 'md', 'healthcare_provider'].includes(a)) {
+      return 'doctor';
+    }
+    return 'patient';
+  };
+
   const ask = useCallback(
     async (
-      query: string,
-      audience: 'patient' | 'doctor' = 'patient',
+      medicalQuery: string,
+      audience: string = 'patient',
       autoCorrect: boolean = false
     ): Promise<MedicalQueryResponse> => {
-      if (!query.trim()) {
+      if (!medicalQuery || !medicalQuery.trim()) {
         const emptyRes: MedicalQueryResponse = { status: 'error', message: 'Query cannot be empty' };
         setResult(emptyRes);
         return emptyRes;
@@ -52,30 +63,35 @@ export function useMedicalQuery() {
       setError(null);
 
       try {
+        const normalizedAudience = normalizeAudience(audience);
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const res = await fetch(`${apiUrl}/api/v1/medical-query`, {
+
+        const response = await fetch(`${apiUrl}/api/v1/medical-query`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify({
-            query: query.trim(),
-            audience,
+            query: medicalQuery.trim(),
+            audience: normalizedAudience, // ALWAYS 'patient' or 'doctor'
             auto_correct: autoCorrect,
           }),
         });
 
-        if (!res.ok) {
-          throw new Error(`Server responded with status ${res.status}`);
+        if (!response.ok) {
+          throw new Error(`API error: ${response.statusText}`);
         }
 
-        const data: MedicalQueryResponse = await res.json();
+        const data: MedicalQueryResponse = await response.json();
         setResult(data);
         return data;
       } catch (err: any) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
         const errRes: MedicalQueryResponse = {
           status: 'error',
-          message: err.message || 'Failed to communicate with medical RAG backend',
+          message: message,
         };
-        setError(err.message || 'Network error');
+        setError(message);
         setResult(errRes);
         return errRes;
       } finally {
@@ -85,14 +101,14 @@ export function useMedicalQuery() {
     []
   );
 
-  const validateOnly = useCallback(async (query: string) => {
-    if (!query.trim()) return null;
+  const validateOnly = useCallback(async (q: string) => {
+    if (!q.trim()) return null;
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const res = await fetch(`${apiUrl}/api/v1/validate-query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: query.trim() }),
+        body: JSON.stringify({ query: q.trim() }),
       });
       if (!res.ok) return null;
       return await res.json();
@@ -106,5 +122,14 @@ export function useMedicalQuery() {
     setError(null);
   }, []);
 
-  return { ask, validateOnly, loading, result, error, clear, setResult };
+  return {
+    ask,
+    query: ask,
+    validateOnly,
+    loading,
+    result,
+    error,
+    clear,
+    setResult,
+  };
 }
