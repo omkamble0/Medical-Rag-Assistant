@@ -761,6 +761,7 @@ def generate_response(
 def process_clinical_query(query: str, user_mode: UserMode) -> SearchResponse:
     """
     Main 4-Stage Clinical Cognitive Pipeline:
+    0. Layer 0 (Query Validation): Detect typos, SNOMED concept grounding, and normalize medical terminology.
     1. Stage 1 (Inbound Analysis): Deconstruct query, extract clinical entities, detect missing clinical parameters, identify context gaps.
     2. Stage 2 (Latent Clinical Thinking): Execute mandatory <clinical_thinking> scratchpad audit.
     3. Stage 3 (Dual-Register Synthesis via Prompt Router): Generate grounded output tailored strictly to active persona without cross-topic contamination.
@@ -768,8 +769,29 @@ def process_clinical_query(query: str, user_mode: UserMode) -> SearchResponse:
     """
     start_time = time.time()
 
-    # Step 0: Deterministic Tier-1 Safety Intercept
-    triage_alert = evaluate_safety_guardrails(query)
+    # Step 0: Pre-Retrieval 3-Layer Query Typo Validation & Concept Grounding
+    validation_info = None
+    effective_query = query
+    try:
+        from app.services.query_validator import validator
+        val_res = validator.validate_and_correct(query)
+        validation_info = val_res
+        if val_res.get("is_valid") and val_res.get("corrected"):
+            effective_query = val_res["corrected"]
+    except Exception as e:
+        # Graceful fallback if validator module encounter an edge case
+        validation_info = {
+            "original": query,
+            "corrected": query,
+            "is_valid": True,
+            "corrections_made": [],
+            "confidence_score": 0.95,
+            "medical_terms_found": [],
+            "issues": []
+        }
+
+    # Step 0.5: Deterministic Tier-1 Safety Intercept
+    triage_alert = evaluate_safety_guardrails(effective_query)
     if triage_alert:
         latency = int((time.time() - start_time) * 1000)
         return SearchResponse(
@@ -777,6 +799,7 @@ def process_clinical_query(query: str, user_mode: UserMode) -> SearchResponse:
             user_mode=user_mode,
             is_emergency=True,
             triage_alert=triage_alert,
+            validation=validation_info,
             query_analysis=None,
             context_gaps=["Immediate life-threatening emergency detected. Automated processing halted."],
             clinical_thinking="<clinical_thinking>\n1. QUERY_DECONSTRUCTION: Acute emergency presentation detected.\n2. RETRIEVED_EVIDENCE_AUDIT: Safety guardrail intercept triggered.\n3. SAFETY & CONTRAINDICATION SWEEP: Immediate emergency department / 911 dispatch indicated.\n4. REGISTER_CALIBRATION: Emergency plain-language alert emitted.\n</clinical_thinking>",
@@ -796,14 +819,14 @@ def process_clinical_query(query: str, user_mode: UserMode) -> SearchResponse:
             latency_ms=max(1, latency)
         )
 
-    # Step 1: Stage 1 Inbound Query Disambiguation & Entity Parsing
-    parsed_analysis = parse_clinical_query(query)
+    # Step 1: Stage 1 Inbound Query Disambiguation & Entity Parsing (using clean/corrected query)
+    parsed_analysis = parse_clinical_query(effective_query)
 
     # Step 2: Retrieve evidence from clinical knowledge base with CEBM RRF and Domain Isolation
-    sources = retrieve_clinical_evidence(query, top_k=3)
+    sources = retrieve_clinical_evidence(effective_query, top_k=3)
 
     # Step 3: Stage 2 Latent Clinical Thinking Scratchpad Audit
-    clinical_thinking_block = generate_clinical_thinking_block(query, parsed_analysis, sources, user_mode)
+    clinical_thinking_block = generate_clinical_thinking_block(effective_query, parsed_analysis, sources, user_mode)
 
     # Step 4: Stage 3 Dual-Register Synthesis via Dynamic Prompt Router
     (
@@ -813,14 +836,13 @@ def process_clinical_query(query: str, user_mode: UserMode) -> SearchResponse:
         doctor_questions,
         patient_sug,
         clinician_sug
-    ) = generate_response(query, sources, user_mode, parsed_analysis)
+    ) = generate_response(effective_query, sources, user_mode, parsed_analysis)
 
     # Step 5: Evaluate Grounding & Confidence
     confidence, citations = evaluate_grounding_and_confidence(answer, sources)
 
-
     # Step 6: Generate smart leading elaboration options
-    elaboration_leadings = get_elaboration_leadings(query, sources)
+    elaboration_leadings = get_elaboration_leadings(effective_query, sources)
 
     # Step 7: Calibrated Accuracy Score (94.0% - 98.5%)
     avg_rel = sum([s.relevance_score for s in sources]) / len(sources) if sources else 0.85
@@ -833,6 +855,7 @@ def process_clinical_query(query: str, user_mode: UserMode) -> SearchResponse:
         user_mode=user_mode,
         is_emergency=False,
         triage_alert=None,
+        validation=validation_info,
         query_analysis=parsed_analysis,
         context_gaps=parsed_analysis.context_gaps if parsed_analysis.context_gaps else None,
         clinical_thinking=clinical_thinking_block,
@@ -852,3 +875,4 @@ def process_clinical_query(query: str, user_mode: UserMode) -> SearchResponse:
 
 # Alias for search router endpoint
 execute_rag_pipeline = process_clinical_query
+

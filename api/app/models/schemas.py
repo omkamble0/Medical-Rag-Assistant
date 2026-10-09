@@ -93,11 +93,25 @@ class EmergencyTriageAlert(BaseModel):
     red_flag_symptoms: List[str] = Field(default_factory=list)
     emergency_contacts: List[str] = Field(default_factory=lambda: ["911 (US/Canada)", "112 (Europe)", "108 / 112 (India)", "988 (Crisis Lifeline)"])
 
+class ValidationResultSchema(BaseModel):
+    original: str
+    corrected: str
+    is_valid: bool
+    corrections_made: List[str] = Field(default_factory=list)
+    confidence_score: float = 1.0
+    medical_terms_found: List[str] = Field(default_factory=list)
+    medical_terms_details: Optional[List[Dict[str, Any]]] = None
+    issues: List[str] = Field(default_factory=list)
+
 class SearchResponse(BaseModel):
     query: str
     user_mode: UserMode
     is_emergency: bool = False
     triage_alert: Optional[EmergencyTriageAlert] = None
+    validation: Optional[ValidationResultSchema] = Field(
+        default=None,
+        description="3-Layer Medical Query Typo & Terminology Validation details"
+    )
     query_analysis: Optional[ParsedQueryAnalysis] = Field(
         default=None,
         description="Stage 1 Inbound Query Deconstruction & Entity Parsing results"

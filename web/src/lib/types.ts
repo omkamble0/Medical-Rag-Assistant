@@ -97,11 +97,30 @@ export interface EmergencyTriageAlert {
   emergency_contacts: string[];
 }
 
+export interface MedicalTermDetail {
+  term: string;
+  standard: string;
+  category: string;
+  snomed_id: string;
+}
+
+export interface ValidationResult {
+  original: string;
+  corrected: string;
+  is_valid: boolean;
+  corrections_made: string[];
+  confidence_score: number;
+  medical_terms_found: string[];
+  medical_terms_details?: MedicalTermDetail[];
+  issues: string[];
+}
+
 export interface SearchResponse {
   query: string;
   user_mode: UserMode;
   is_emergency: boolean;
   triage_alert?: EmergencyTriageAlert;
+  validation?: ValidationResult;
   query_analysis?: ParsedQueryAnalysis;
   context_gaps?: string[];
   clinical_thinking?: string;
@@ -118,3 +137,4 @@ export interface SearchResponse {
   reading_level?: string;
   latency_ms: number;
 }
+

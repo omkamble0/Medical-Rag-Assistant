@@ -8,6 +8,8 @@ import { PatientView } from "@/components/patient-view";
 import { CitationDrawer } from "@/components/citation-drawer";
 import { TriageBanner } from "@/components/triage-banner";
 import { getMatchingSuggestions, SearchSuggestion } from "@/lib/suggestions";
+import { QueryValidationComponent } from "@/components/QueryValidationComponent";
+import { MedicalQueryPanel } from "@/components/MedicalQueryPanel";
 import {
   Search,
   Stethoscope,
@@ -27,8 +29,10 @@ import {
   BookOpen,
   SlidersHorizontal,
   Clock,
-  Layers
+  Layers,
+  Wand2
 } from "lucide-react";
+
 
 export default function Home() {
   const [query, setQuery] = useState("");
@@ -39,6 +43,7 @@ export default function Home() {
 
   const [result, setResult] = useState<SearchResponse | null>(null);
   const [patientResult, setPatientResult] = useState<SearchResponse | null>(null);
+  const [showAgenticRAG, setShowAgenticRAG] = useState<boolean>(true);
 
 
   // Autocomplete state
@@ -243,12 +248,45 @@ export default function Home() {
               <Columns3 className="w-4 h-4" />
               <span>Compare Both</span>
             </button>
+
+            <div className="w-[1px] h-4 bg-slate-300 mx-1 hidden md:block" />
+
+            <button
+              type="button"
+              onClick={() => setShowAgenticRAG(!showAgenticRAG)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                showAgenticRAG
+                  ? "bg-slate-900 text-teal-300 shadow-sm border border-slate-700"
+                  : "bg-white text-slate-700 hover:text-slate-900 border border-slate-200"
+              }`}
+              title="Toggle Query Guard + Agentic RAG Assistant"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-teal-400" />
+              <span>Agentic RAG</span>
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Main Search & Hero Section (Responsive & Dynamic when topic is active) */}
-      {!hasTopic ? (
+      {/* Main Search & Hero Section */}
+      {showAgenticRAG ? (
+        <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 pb-12 animate-fade-in">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-xs font-semibold shadow-xs mb-3">
+              <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+              <span>Agentic RAG • Query Guard Typo Correction • Audience-Aware Synthesis</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Medical Query Guard & Agentic Retrieval
+            </h2>
+            <p className="text-slate-600 text-xs sm:text-sm max-w-xl mx-auto mt-1">
+              Catches medical typos automatically before retrieval, generates natural patient/doctor answers, and cites clinical guidelines.
+            </p>
+          </div>
+
+          <MedicalQueryPanel />
+        </section>
+      ) : !hasTopic ? (
         /* ================= LANDING HERO VIEW ================= */
         <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 pb-6 text-center animate-fade-in">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-indigo-100 text-indigo-700 text-xs font-semibold shadow-xs mb-4">
@@ -368,6 +406,17 @@ export default function Home() {
                 </div>
               </div>
             )}
+
+            {/* Real-Time Query Validation & Medical Normalization */}
+            <div className="mt-3 text-left">
+              <QueryValidationComponent
+                query={query}
+                onApplyCorrection={(corrected) => {
+                  setQuery(corrected);
+                  handleSearch(corrected);
+                }}
+              />
+            </div>
           </div>
 
           {/* Quick Explore Condition Pills */}
@@ -503,6 +552,18 @@ export default function Home() {
                   </div>
                 </div>
               )}
+
+              {/* Compact Real-Time Query Validation */}
+              <div className="mt-2 text-left">
+                <QueryValidationComponent
+                  query={query}
+                  compact={true}
+                  onApplyCorrection={(corrected) => {
+                    setQuery(corrected);
+                    handleSearch(corrected);
+                  }}
+                />
+              </div>
             </div>
 
             {/* Reset / New Search Button */}
@@ -551,6 +612,20 @@ export default function Home() {
                     </span>
                   )}
                 </div>
+
+                {/* Auto-Correction Validation Alert */}
+                {(result?.validation?.corrections_made?.length || patientResult?.validation?.corrections_made?.length) ? (
+                  <div className="mb-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 font-medium">
+                    <Wand2 className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Auto-corrected medical query:</span>
+                    <span className="font-bold text-slate-900">
+                      {(result?.validation?.corrections_made || patientResult?.validation?.corrections_made || []).join(", ")}
+                    </span>
+                    <span className="text-[10px] text-amber-700 bg-amber-100/80 px-1.5 py-0.2 rounded font-mono">
+                      SNOMED Grounded
+                    </span>
+                  </div>
+                ) : null}
 
                 {/* Clear & Polished Topic Heading */}
                 <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">
