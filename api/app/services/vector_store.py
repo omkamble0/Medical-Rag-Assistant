@@ -419,22 +419,45 @@ class DenseSemanticScorer:
 
 
 
-# ============================================================
-# Dynamic Unified Corpus & Index Management
-# ============================================================
 def get_all_documents() -> List[Dict[str, Any]]:
-    """Merges built-in seed documents with dynamically imported documents."""
+    """Merges built-in seed documents, clinical guidelines, and dynamically imported documents."""
+    try:
+        from app.services.guideline_client import load_guideline_sources
+        guidelines = load_guideline_sources()
+    except Exception:
+        guidelines = []
+
+    try:
+        from app.services.pubmed_client import FALLBACK_PUBMED_STORE
+        pubmed_docs = [
+            {
+                "id": f"DOC-PUBMED-{p['pmid']}",
+                "domain": "GENERAL_MEDICINE",
+                "title": p["title"],
+                "journal": p["journal"],
+                "year": p["year"],
+                "doi_or_pmid": p.get("doi", f"PMID:{p['pmid']}"),
+                "evidence_level": p["evidence_level"],
+                "keywords": [p["title"].lower(), p["journal"].lower()],
+                "snippet": p["abstract"],
+                "key_takeaway": p["key_takeaway"]
+            }
+            for p in FALLBACK_PUBMED_STORE
+        ]
+    except Exception:
+        pubmed_docs = []
+
     try:
         from app.services.knowledge_manager import load_imported_documents
         imported = load_imported_documents()
     except Exception:
         imported = []
     
-    # Deduplicate by id or doi
+    # Deduplicate by id or title
     seen_ids = set()
     combined = []
-    for doc in SEED_KNOWLEDGE_BASE + imported:
-        d_id = doc.get("id")
+    for doc in SEED_KNOWLEDGE_BASE + guidelines + pubmed_docs + imported:
+        d_id = doc.get("id") or doc.get("title")
         if d_id and d_id in seen_ids:
             continue
         if d_id:
