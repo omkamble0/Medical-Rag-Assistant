@@ -3,6 +3,7 @@ from enum import Enum
 class UserMode(str, Enum):
     PROFESSIONAL = "professional"
     PATIENT = "patient"
+    DOCTOR = "doctor"
 
 class EvidenceLevel(str, Enum):
     LEVEL_1 = "Level 1 (Meta-Analysis / Systematic Review)"
