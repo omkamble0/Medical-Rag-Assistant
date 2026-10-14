@@ -3,6 +3,10 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from app.services.query_guard import QueryGuard
 from app.services.rag_agent import MedicalRAGAgent
+from app.services.agent_workflow import execute_agentic_rag_workflow
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["Medical Agentic RAG"])
 
@@ -82,19 +86,56 @@ async def medical_query_endpoint(payload: QueryRequest):
 
         effective_query = validation["corrected"] if validation["needs_correction"] else payload.query
         
-        # Generate with NORMALIZED audience (strict enforcement)
-        response = rag.generate(effective_query, audience=normalized_audience)
+        # Execute LangGraph Multi-Agent RAG Workflow with fallback
+        try:
+            workflow_res = execute_agentic_rag_workflow(effective_query, audience=normalized_audience)
+            answer_text = workflow_res.get("answer", "")
+            sources = workflow_res.get("sources", [])
+            formatted_sources = [
+                {
+                    "index": s.get("citation_index", i + 1),
+                    "title": s.get("title"),
+                    "journal": s.get("journal"),
+                    "year": s.get("year"),
+                    "evidence_level": s.get("evidence_level", "Level 1"),
+                    "snippet": s.get("content") or s.get("snippet", ""),
+                    "key_takeaway": s.get("key_takeaway")
+                }
+                for i, s in enumerate(sources)
+            ]
+            trace = workflow_res.get("execution_trace", [])
+            tool_results = workflow_res.get("tool_results", {})
+            crag_grade = workflow_res.get("crag_grade")
+            grounding_audit = workflow_res.get("grounding_audit")
+            triage_alert = workflow_res.get("triage_alert")
+            provider_name = workflow_res.get("provider_info", {}).get("active_provider", "LangGraph Clinical Multi-Agent")
+        except Exception as workflow_err:
+            logger.warning(f"Workflow execution fell back to basic generator: {workflow_err}")
+            response = rag.generate(effective_query, audience=normalized_audience)
+            answer_text = response["answer"]
+            formatted_sources = response["sources"]
+            trace = []
+            tool_results = {}
+            crag_grade = None
+            grounding_audit = None
+            triage_alert = None
+            provider_name = response.get("provider", "Clinical RAG Agent")
 
         return {
             "status": "ok",
             "original_query": payload.query,
             "effective_query": effective_query,
             "was_corrected": validation["needs_correction"],
-            "answer": response["answer"],
-            "sources": response["sources"],
+            "answer": answer_text,
+            "sources": formatted_sources,
             "audience": normalized_audience,  # NORMALIZED: always 'patient' or 'doctor'
-            "reading_level": response.get("reading_level", "Grade 6.0" if normalized_audience == "patient" else "Postgraduate Clinical Level"),
-            "provider": response.get("provider", "Clinical RAG Agent")
+            "reading_level": "Grade 6.0 - Everyday English" if normalized_audience == "patient" else "Postgraduate Clinical Level",
+            "provider": provider_name,
+            "execution_trace": trace,
+            "tool_results": tool_results,
+            "crag_grade": crag_grade,
+            "grounding_audit": grounding_audit,
+            "triage_alert": triage_alert
         }
     except Exception as e:
         raise HTTPException(

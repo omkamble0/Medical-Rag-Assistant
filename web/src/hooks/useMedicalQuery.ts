@@ -31,6 +31,17 @@ export interface MedicalQueryResponse {
     confidence: number;
   }>;
   message?: string;
+  execution_trace?: Array<{
+    step: string;
+    icon: string;
+    timestamp: string;
+    summary: string;
+    details: any;
+  }>;
+  tool_results?: any;
+  crag_grade?: any;
+  grounding_audit?: any;
+  triage_alert?: any;
 }
 
 export function useMedicalQuery() {

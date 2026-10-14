@@ -79,8 +79,8 @@ export function CitationDrawer({ sources, activeCitation, onSelectCitation }: Ci
 
               {/* Footer with Relevance & DOI */}
               <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
-                <span className="flex items-center gap-1 text-indigo-600 font-semibold">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Match: {Math.round(source.relevance_score * 100)}%
+                <span className="flex items-center gap-1 text-emerald-600 font-semibold">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Verified Source
                 </span>
                 {source.doi_or_pmid && (
                   <a

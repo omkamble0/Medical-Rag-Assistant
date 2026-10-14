@@ -2,7 +2,7 @@
 
 import React from "react";
 import { ConfidenceMetrics } from "@/lib/types";
-import { ShieldCheck, ShieldAlert, AlertTriangle, Database, Activity, Clock, Award } from "lucide-react";
+import { ShieldCheck, ShieldAlert, AlertTriangle, BookOpenCheck, Activity, Clock, Award } from "lucide-react";
 
 interface ConfidenceRadarProps {
   metrics: ConfidenceMetrics;
@@ -85,7 +85,7 @@ export function ConfidenceRadar({ metrics }: ConfidenceRadarProps) {
         <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
             <span className="flex items-center gap-1.5 font-medium">
-              <Database className="w-3.5 h-3.5 text-indigo-500" />
+              <BookOpenCheck className="w-3.5 h-3.5 text-indigo-500" />
               Guideline Match
             </span>
             <span className="font-bold text-slate-800">

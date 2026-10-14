@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+import { AgentTraceViewer } from '@/components/agent-trace-viewer';
 
 export function MedicalQueryPanel() {
   const [query, setQuery] = useState('');

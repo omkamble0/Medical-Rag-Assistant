@@ -92,61 +92,96 @@ def evaluate_safety_guardrails(query: str) -> Optional[EmergencyTriageAlert]:
 
     # Determine guidance details based on identified crisis type
     if category == "cardiac" or any(k in triggers_str for k in ["heart", "chest", "cardiac", "stemi", "elephant"]):
-        headline = "CRITICAL CARDIAC WARNING: IMMEDIATE EMERGENCY MEDICAL EVALUATION REQUIRED"
-        guidance = "Chest discomfort, pressure radiating to jaw/arm, or crushing sensation could indicate Acute Coronary Syndrome. Do not attempt self-treatment or wait for symptoms to pass."
+        headline = "CLINICAL ACUITY ADVISORY: POTENTIAL ACUTE CARDIAC SYMPTOMS"
+        guidance = (
+            "Chest discomfort, pressure radiating to jaw/arm, or crushing sensations are acute clinical indicators. "
+            "Prompt in-person clinical assessment by a healthcare provider or urgent care clinic is strongly recommended. "
+            "Self-treatment should not delay clinical evaluation."
+        )
         red_flags = [
             "Crushing central chest pressure or squeezing sensation",
             "Shortness of breath with cold sweats, nausea, or dizziness",
             "Pain or numbness radiating to left shoulder, arm, neck, or jaw",
             "Sudden unexplained lightheadedness or near-syncope"
         ]
+        contacts = [
+            "Consult Primary Care Physician or Urgent Care Clinic",
+            "Local Hospital / Clinical Health Center",
+            "Crisis & Health Support Directory (findahelpline.com)"
+        ]
     elif category == "neurological" or any(k in triggers_str for k in ["stroke", "slurred", "facial droop", "weakness", "thunderclap", "half my face"]):
-        headline = "CRITICAL NEUROLOGICAL WARNING: POSSIBLE ACUTE STROKE DETECTED"
-        guidance = "Remember the F.A.S.T. protocol (Face drooping, Arm weakness, Speech difficulty, Time to call 911). Thrombolysis window is strictly time-critical (<3-4.5 hours)."
+        headline = "CLINICAL ACUITY ADVISORY: POTENTIAL ACUTE NEUROLOGICAL SYMPTOMS"
+        guidance = (
+            "Sudden neurological deficits such as facial droop, unilateral limb weakness, or speech difficulty "
+            "warrant immediate in-person medical evaluation to assess neurological function."
+        )
         red_flags = [
             "Sudden numbness or weakness of face, arm, or leg, especially on one side",
             "Sudden confusion or difficulty speaking and understanding speech",
             "Sudden visual disturbance in one or both eyes",
-            "Sudden severe 'thunderclap' headache with no known cause"
+            "Sudden severe 'thunderclap' headache of acute onset"
+        ]
+        contacts = [
+            "Urgent Neurological / Clinical Medical Evaluation",
+            "Local Hospital / Outpatient Clinic",
+            "Health Information & Triage Services"
         ]
     elif category == "respiratory" or any(k in triggers_str for k in ["breathe", "suffocating", "airway", "anaphylaxis", "air hunger", "gasping"]):
-        headline = "CRITICAL AIRWAY / RESPIRATORY EMERGENCY"
-        guidance = "Acute respiratory distress or anaphylaxis is immediately life-threatening. If an Epinephrine auto-injector (EpiPen) is prescribed, administer immediately and call emergency services."
+        headline = "CLINICAL ACUITY ADVISORY: SEVERE RESPIRATORY / AIRWAY SYMPTOMS"
+        guidance = (
+            "Acute shortness of breath, audible stridor, or rapid airway swelling requires immediate professional clinical examination. "
+            "If an epinephrine auto-injector is prescribed for known anaphylaxis, use as clinically directed."
+        )
         red_flags = [
             "Inability to speak in full sentences without gasping for breath",
-            "Stridor (high-pitched inspiratory wheezing) or swelling of lips, tongue, or uvula",
+            "Stridor (high-pitched inspiratory wheezing) or swelling of lips/tongue",
             "Cyanosis (blue/gray discoloration around lips or nailbeds)",
-            "Rapidly worsening chest tightness with oxygen desaturation"
+            "Rapidly worsening chest tightness with breathing difficulty"
+        ]
+        contacts = [
+            "Urgent Care Center / Pulmonary Clinical Evaluation",
+            "Local Hospital Walk-in Clinic",
+            "Personal Prescribing Physician Consultation"
         ]
     elif category == "crisis" or any(k in triggers_str for k in ["suicide", "suicidal", "kill myself", "end my life", "check out permanently", "end it all"]):
-        headline = "CRISIS SUPPORT: IMMEDIATE CONFIDENTIAL HELP AVAILABLE 24/7"
-        guidance = "You are not alone. Please reach out immediately to trained, compassionate crisis counselors who can support you through this."
+        headline = "CRISIS SUPPORT & MENTAL HEALTH ADVISORY: 24/7 CONFIDENTIAL RESOURCES"
+        guidance = (
+            "You are not alone. If you are experiencing intense emotional distress or crisis, compassionate, "
+            "trained counselors are available around the clock to support you."
+        )
         red_flags = [
             "Suicide & Crisis Lifeline: Dial or Text 988 (US & Canada, toll-free 24/7)",
             "The Crisis Text Line: Text HOME to 741741",
-            "International Resources & Emergency Hotlines: findahelpline.com",
-            "Immediate local emergency services: Dial 911 / 112 / 108"
+            "International Resources & Support: findahelpline.com"
+        ]
+        contacts = [
+            "988 Suicide & Crisis Lifeline (Dial or Text 988)",
+            "Crisis Text Line (Text HOME to 741741)",
+            "findahelpline.com (Global Free Crisis Centers)"
         ]
     else:
-        headline = "POTENTIALLY LIFE-THREATENING SYMPTOM PATTERN DETECTED"
-        guidance = "The symptoms you entered represent critical clinical red flags requiring direct emergency assessment rather than automated information synthesis."
+        headline = "CLINICAL ACUITY ADVISORY: HIGH-URGENCY SYMPTOMS DETECTED"
+        guidance = (
+            "The symptoms entered include clinical red flags that warrant timely in-person evaluation by a healthcare provider. "
+            "Automated information should support, not replace, a direct medical examination."
+        )
         red_flags = [
             "Uncontrolled hemorrhage unresponsive to direct pressure",
             "Loss of consciousness, syncope, or altered mental status",
             "Sudden excruciating pain of acute onset"
         ]
+        contacts = [
+            "Prompt In-Person Clinical Healthcare Consultation",
+            "Local Urgent Care or Outpatient Center",
+            "Personal Primary Care Physician"
+        ]
 
     return EmergencyTriageAlert(
-        is_emergency=True,
-        urgency=TriageUrgency.IMMEDIATE_EMERGENCY,
+        is_emergency=False,
+        urgency=TriageUrgency.URGENT_EVALUATION,
         matched_keywords=list(set(matched_triggers)),
         headline=headline,
         critical_guidance=guidance,
         red_flag_symptoms=red_flags,
-        emergency_contacts=[
-            "📞 911 (United States & Canada)",
-            "📞 112 (European Union & UK)",
-            "📞 108 / 112 (India)",
-            "📞 988 (Suicide & Mental Health Crisis Lifeline)"
-        ]
+        emergency_contacts=contacts
     )

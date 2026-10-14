@@ -136,6 +136,10 @@ class SearchResponse(BaseModel):
     clinician_suggestions: Optional[ClinicianSuggestion] = Field(default=None, description="Structured clinician suggestions (subgroups, titration, guidelines, contraindications)")
     reading_level: Optional[str] = Field(None, description="Readability grade level")
     latency_ms: int = Field(..., description="Processing time in milliseconds")
+    execution_trace: Optional[List[Dict[str, Any]]] = Field(default=None, description="LangGraph 7-stage execution trace")
+    tool_results: Optional[Dict[str, Any]] = Field(default=None, description="Autonomous clinical tool results (DDI, eGFR, PubMed)")
+    crag_grade: Optional[Dict[str, Any]] = Field(default=None, description="Corrective RAG relevance grade and fallback decision")
+    grounding_audit: Optional[Dict[str, Any]] = Field(default=None, description="Self-RAG grounding confidence and hallucination score")
 
 class DualCompareResponse(BaseModel):
     query: str

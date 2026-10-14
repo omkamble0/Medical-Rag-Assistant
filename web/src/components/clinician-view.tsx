@@ -4,10 +4,6 @@ import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { SearchResponse } from "@/lib/types";
-import { ConfidenceRadar } from "./confidence-radar";
-import { ElaborationGuide } from "./elaboration-guide";
-import { ClinicalThinkingDrawer } from "./clinical-thinking-drawer";
-import { ContextGapsAlert } from "./context-gaps-alert";
 import {
   Stethoscope, CheckCircle2, FileCheck2, ShieldCheck,
   Layers, FlaskConical, GitCompare, AlertOctagon
@@ -63,56 +59,25 @@ export function ClinicianView({ response, activeCitation, onSelectCitation, onSe
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base sm:text-lg font-bold text-slate-900">
-                Clinician Mode (Evidence-Based Synthesis)
+                Clinician Reference (Evidence-Based)
               </h3>
               <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-teal-100 text-teal-800 border border-teal-200">
-                Post-Graduate
+                Physician Register
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Oxford CEBM Grounding, guideline benchmarks & quantitative hazard ratios
+              Guideline benchmarks, trial endpoints & prescribing considerations
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {response.accuracy_score && (
-            <div className="flex items-center gap-1.5 text-xs text-teal-800 font-bold bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200">
-              <ShieldCheck className="w-4 h-4 text-teal-600" />
-              <span>{response.accuracy_score}% Evidentiary Accuracy</span>
-            </div>
-          )}
-          <div className="flex items-center gap-2 text-xs font-mono font-medium text-slate-600 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs">
-            <FileCheck2 className="w-3.5 h-3.5 text-teal-600" />
-            <span>Latency: {response.latency_ms}ms</span>
+          <div className="flex items-center gap-1.5 text-xs text-teal-800 font-semibold bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200">
+            <ShieldCheck className="w-4 h-4 text-teal-600" />
+            <span>Peer-Reviewed Clinical Evidence</span>
           </div>
         </div>
       </div>
-
-      {/* Stage 1 Inbound Context Gaps & Missing Variables Alert */}
-      {(response.context_gaps || response.query_analysis?.context_gaps) && (
-        <ContextGapsAlert
-          analysis={response.query_analysis}
-          contextGaps={response.context_gaps}
-          onSelectClarification={onSelectElaboration}
-        />
-      )}
-
-      {/* Stage 2 Latent Clinical Thinking Scratchpad Audit */}
-      {response.clinical_thinking && (
-        <ClinicalThinkingDrawer thinkingBlock={response.clinical_thinking} />
-      )}
-
-      {/* Confidence Radar */}
-      <ConfidenceRadar metrics={response.confidence} />
-
-      {/* Smart Elaboration Guide */}
-      {response.elaboration_leadings && onSelectElaboration && (
-        <ElaborationGuide
-          leadings={response.elaboration_leadings}
-          onSelectOption={onSelectElaboration}
-        />
-      )}
 
       {/* Clinical Synthesized Content Card with ReactMarkdown */}
       <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-sm leading-relaxed text-slate-800 text-sm sm:text-[15px]">

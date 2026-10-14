@@ -9,7 +9,6 @@ import { CitationDrawer } from "@/components/citation-drawer";
 import { TriageBanner } from "@/components/triage-banner";
 import { getMatchingSuggestions, SearchSuggestion } from "@/lib/suggestions";
 import { QueryValidationComponent } from "@/components/QueryValidationComponent";
-import { MedicalQueryPanel } from "@/components/MedicalQueryPanel";
 import {
   Search,
   Stethoscope,
@@ -30,9 +29,11 @@ import {
   SlidersHorizontal,
   Clock,
   Layers,
-  Wand2
+  Wand2,
+  Calculator
 } from "lucide-react";
-
+import { ClinicalCalculatorWidget } from "@/components/clinical-calculator-widget";
+import { IntegratedChatThread } from "@/components/integrated-chat-thread";
 
 export default function Home() {
   const [query, setQuery] = useState("");
@@ -43,7 +44,7 @@ export default function Home() {
 
   const [result, setResult] = useState<SearchResponse | null>(null);
   const [patientResult, setPatientResult] = useState<SearchResponse | null>(null);
-  const [showAgenticRAG, setShowAgenticRAG] = useState<boolean>(true);
+  const [showCalculator, setShowCalculator] = useState<boolean>(false);
 
 
   // Autocomplete state
@@ -183,11 +184,11 @@ export default function Home() {
                   AegisMed
                 </h1>
                 <span className="px-2 py-0.5 text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full hidden xs:inline-block">
-                  Clinical Truth Engine
+                  Evidence-Based Health Guide
                 </span>
               </div>
               <p className="text-xs text-slate-500 hidden sm:block">
-                WHO-Aligned Guidelines • Oxford CEBM Evidence Grounding
+                Plain-English Guides for Patients • Clinical References for Doctors
               </p>
             </div>
           </div>
@@ -253,40 +254,30 @@ export default function Home() {
 
             <button
               type="button"
-              onClick={() => setShowAgenticRAG(!showAgenticRAG)}
+              onClick={() => setShowCalculator(!showCalculator)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-                showAgenticRAG
-                  ? "bg-slate-900 text-teal-300 shadow-sm border border-slate-700"
+                showCalculator
+                  ? "bg-indigo-900 text-indigo-300 shadow-sm border border-indigo-700"
                   : "bg-white text-slate-700 hover:text-slate-900 border border-slate-200"
               }`}
-              title="Toggle Query Guard + Agentic RAG Assistant"
+              title="Open Kidney (eGFR), BMI, Stroke Risk & Medicine Interaction Checks"
             >
-              <Sparkles className="w-3.5 h-3.5 text-teal-400" />
-              <span>Agentic RAG</span>
+              <Calculator className="w-3.5 h-3.5 text-indigo-500" />
+              <span>Calculators</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Search & Hero Section */}
-      {showAgenticRAG ? (
-        <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 pb-12 animate-fade-in">
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-xs font-semibold shadow-xs mb-3">
-              <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
-              <span>Agentic RAG • Query Guard Typo Correction • Audience-Aware Synthesis</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Medical Query Guard & Agentic Retrieval
-            </h2>
-            <p className="text-slate-600 text-xs sm:text-sm max-w-xl mx-auto mt-1">
-              Catches medical typos automatically before retrieval, generates natural patient/doctor answers, and cites clinical guidelines.
-            </p>
-          </div>
+      {/* Interactive Clinical Calculator & DDI Suite */}
+      {showCalculator && (
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4 animate-fade-in">
+          <ClinicalCalculatorWidget onClose={() => setShowCalculator(false)} />
+        </div>
+      )}
 
-          <MedicalQueryPanel />
-        </section>
-      ) : !hasTopic ? (
+      {/* Main Search & Hero Section */}
+      {!hasTopic ? (
         /* ================= LANDING HERO VIEW ================= */
         <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 pb-6 text-center animate-fade-in">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-indigo-100 text-indigo-700 text-xs font-semibold shadow-xs mb-4">
@@ -585,7 +576,7 @@ export default function Home() {
                 <div className="flex flex-wrap items-center gap-2 mb-1.5">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
                     <Sparkles className="w-3.5 h-3.5" />
-                    Synthesized Clinical Topic
+                    Medical Topic Guide
                   </span>
 
                   {compareMode ? (
@@ -608,28 +599,25 @@ export default function Home() {
                   {result?.sources && result.sources.length > 0 && (
                     <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      {result.sources.length} Peer-Reviewed Citations
+                      {result.sources.length} Verified Sources
                     </span>
                   )}
                 </div>
 
-                {/* Auto-Correction Validation Alert */}
+                {/* Auto-Correction Notice */}
                 {(result?.validation?.corrections_made?.length || patientResult?.validation?.corrections_made?.length) ? (
                   <div className="mb-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 font-medium">
                     <Wand2 className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Auto-corrected medical query:</span>
+                    <span>Showing results for:</span>
                     <span className="font-bold text-slate-900">
                       {(result?.validation?.corrections_made || patientResult?.validation?.corrections_made || []).join(", ")}
-                    </span>
-                    <span className="text-[10px] text-amber-700 bg-amber-100/80 px-1.5 py-0.2 rounded font-mono">
-                      SNOMED Grounded
                     </span>
                   </div>
                 ) : null}
 
                 {/* Clear & Polished Topic Heading */}
                 <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">
-                  {activeQueryText || "Clinical Search Topic"}
+                  {activeQueryText || "Medical Search Topic"}
                 </h2>
               </div>
 
@@ -637,7 +625,7 @@ export default function Home() {
               <div className="flex items-center gap-2 flex-shrink-0 self-start sm:self-center">
                 <div className="flex items-center gap-1 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-medium text-slate-600">
                   <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>WHO & Oxford CEBM</span>
+                  <span>Verified Medical Guidelines</span>
                 </div>
               </div>
             </div>
@@ -688,14 +676,14 @@ export default function Home() {
               <span className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: "300ms" }} />
             </div>
           </div>
-        ) : result?.is_emergency && result.triage_alert ? (
-          /* Emergency Intercept Banner */
-          <div className="max-w-4xl mx-auto my-4">
-            <TriageBanner alert={result.triage_alert} />
-          </div>
         ) : compareMode && result && patientResult ? (
           /* Side-by-Side Dual-Perspective Synchronizer */
           <div className="space-y-6">
+            {result?.triage_alert && (
+              <div className="max-w-4xl mx-auto my-3">
+                <TriageBanner alert={result.triage_alert} />
+              </div>
+            )}
             <div className="p-4 bg-gradient-to-r from-indigo-50 via-white to-teal-50 border border-slate-200 rounded-2xl text-center text-xs sm:text-sm text-slate-700 shadow-2xs">
               <span className="font-bold text-indigo-900">Side-by-Side Dual Perspective:</span> Grounded in the identical peer-reviewed evidence set across plain English (patient) and clinical register (physician).
             </div>
@@ -725,6 +713,15 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Inline Integrated Conversational Chatbot & Follow-ups in Compare Mode */}
+            <IntegratedChatThread
+              initialTopic={activeQueryText}
+              mode={mode}
+              response={result}
+              activeCitation={activeCitation}
+              onSelectCitation={handleSelectCitation}
+            />
+
             {/* Shared Evidence Repository */}
             <div className="mt-8">
               <CitationDrawer
@@ -736,19 +733,25 @@ export default function Home() {
           </div>
         ) : result ? (
           /* Standard Single-Perspective + Evidence Drawer Layout */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Main AI Response Pane */}
-            <div className="lg:col-span-8 space-y-6">
-              {mode === "professional" ? (
-                <ClinicianView
-                  response={result}
-                  activeCitation={activeCitation}
-                  onSelectCitation={handleSelectCitation}
-                  onSelectElaboration={(q) => {
-                    setQuery(q);
-                    handleSearch(q);
-                  }}
-                />
+          <div className="space-y-6">
+            {result?.triage_alert && (
+              <div className="max-w-4xl mx-auto my-3">
+                <TriageBanner alert={result.triage_alert} />
+              </div>
+            )}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              {/* Main AI Response Pane */}
+              <div className="lg:col-span-8 space-y-6">
+                {mode === "professional" ? (
+                  <ClinicianView
+                    response={result}
+                    activeCitation={activeCitation}
+                    onSelectCitation={handleSelectCitation}
+                    onSelectElaboration={(q) => {
+                      setQuery(q);
+                      handleSearch(q);
+                    }}
+                  />
               ) : (
                 <PatientView
                   response={result}
@@ -760,6 +763,15 @@ export default function Home() {
                   }}
                 />
               )}
+
+              {/* Inline Integrated Conversational Chatbot & Follow-ups */}
+              <IntegratedChatThread
+                initialTopic={activeQueryText}
+                mode={mode}
+                response={result}
+                activeCitation={activeCitation}
+                onSelectCitation={handleSelectCitation}
+              />
             </div>
 
             {/* Evidence & Citations Sidebar */}
@@ -771,19 +783,20 @@ export default function Home() {
               />
             </div>
           </div>
-        ) : null}
-      </section>
+        </div>
+      ) : null}
+    </section>
 
       {/* Footer with International Health Bodies & Oxford CEBM Standards */}
       <footer className="max-w-7xl mx-auto px-4 mt-20 pt-8 border-t border-slate-200 text-center text-xs text-slate-500 space-y-3">
         <div className="flex flex-wrap items-center justify-center gap-3 text-slate-600 font-semibold">
           <span>WHO World Health Organization</span>
           <span>•</span>
-          <span>Oxford CEBM Level 1</span>
+          <span>Peer-Reviewed Clinical Evidence</span>
           <span>•</span>
           <span>ADA / AHA / NICE / ESC Guidelines</span>
           <span>•</span>
-          <span>Tier-1 Emergency Intercept</span>
+          <span>Emergency Triage Safety</span>
         </div>
         <p className="text-slate-400 max-w-2xl mx-auto leading-relaxed">
           AegisMed is an evidence-based clinical and patient decision-support tool. All summaries are grounded in peer-reviewed clinical literature. Not a substitute for professional in-person medical diagnosis.

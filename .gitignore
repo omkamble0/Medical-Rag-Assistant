@@ -50,3 +50,6 @@ yarn-error.log*
 .idea/
 .vscode/
 Thumbs.db
+
+# Local Vector Storage & Caches
+api/app/data/qdrant_storage/

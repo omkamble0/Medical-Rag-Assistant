@@ -202,7 +202,13 @@ export function useQueryValidator() {
         clearTimeout(timeoutId);
 
         if (response.ok) {
-          const data: ValidationResult = await response.json();
+          const rawData = await response.json();
+          const data: ValidationResult = {
+            ...rawData,
+            issues: Array.isArray(rawData.issues) ? rawData.issues : [],
+            corrections_made: Array.isArray(rawData.corrections_made) ? rawData.corrections_made : [],
+            medical_terms_found: Array.isArray(rawData.medical_terms_found) ? rawData.medical_terms_found : [],
+          };
           if (lastQueryRef.current === query) {
             setValidationResult(data);
             setIsValidating(false);

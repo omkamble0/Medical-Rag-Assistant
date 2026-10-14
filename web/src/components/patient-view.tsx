@@ -4,15 +4,11 @@ import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { SearchResponse } from "@/lib/types";
-import { ConfidenceRadar } from "./confidence-radar";
 import { JargonGlossary } from "./jargon-tooltip";
 import { DoctorChecklist } from "./doctor-checklist";
-import { ElaborationGuide } from "./elaboration-guide";
-import { ClinicalThinkingDrawer } from "./clinical-thinking-drawer";
-import { ContextGapsAlert } from "./context-gaps-alert";
 import {
   HeartHandshake, Sparkles, BookOpenCheck, Stethoscope, Lightbulb,
-  ShieldCheck, CheckCircle2, AlertTriangle, Activity, Apple, HelpCircle
+  ShieldCheck, CheckCircle2, AlertTriangle, Activity, Apple
 } from "lucide-react";
 
 interface PatientViewProps {
@@ -42,9 +38,9 @@ export function PatientView({ response, activeCitation, onSelectCitation, onSele
                     ? "bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-300"
                     : "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200"
                 }`}
-                title={`View Verified Clinical Study [${citIdx}]`}
+                title={`View Verified Reference [${citIdx}]`}
               >
-                Study [{citIdx}]
+                [{citIdx}]
               </button>
             ))}
           </span>
@@ -72,49 +68,22 @@ export function PatientView({ response, activeCitation, onSelectCitation, onSele
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              {response.reading_level || "Grade 6.2 — Easy to understand, verified by medical trials"}
+              Clear, easy-to-understand explanation for you and your family
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {response.accuracy_score && (
-            <div className="flex items-center gap-1.5 text-xs text-indigo-800 font-bold bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-200">
-              <CheckCircle2 className="w-4 h-4 text-indigo-600" />
-              <span>{response.accuracy_score}% Grounding Accuracy</span>
-            </div>
-          )}
+          <div className="flex items-center gap-1.5 text-xs text-indigo-800 font-medium bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-200">
+            <CheckCircle2 className="w-4 h-4 text-indigo-600" />
+            <span>Peer-Reviewed Evidence</span>
+          </div>
           <div className="hidden sm:flex items-center gap-1.5 text-xs text-emerald-700 font-semibold bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Doctor-Approved Science</span>
+            <span>Doctor-Approved Guidance</span>
           </div>
         </div>
       </div>
-
-      {/* Stage 1 Inbound Context Gaps & Missing Variables Alert */}
-      {(response.context_gaps || response.query_analysis?.context_gaps) && (
-        <ContextGapsAlert
-          analysis={response.query_analysis}
-          contextGaps={response.context_gaps}
-          onSelectClarification={onSelectElaboration}
-        />
-      )}
-
-      {/* Stage 2 Latent Clinical Thinking Scratchpad Audit */}
-      {response.clinical_thinking && (
-        <ClinicalThinkingDrawer thinkingBlock={response.clinical_thinking} />
-      )}
-
-      {/* Confidence Indicator in Patient-Friendly Terms */}
-      <ConfidenceRadar metrics={response.confidence} />
-
-      {/* Smart Elaboration Guide (when available) */}
-      {response.elaboration_leadings && onSelectElaboration && (
-        <ElaborationGuide
-          leadings={response.elaboration_leadings}
-          onSelectOption={onSelectElaboration}
-        />
-      )}
 
       {/* Main Patient Content with ReactMarkdown & remarkGfm */}
       <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-sm leading-relaxed text-slate-700 text-base sm:text-[17px]">
@@ -136,18 +105,19 @@ export function PatientView({ response, activeCitation, onSelectCitation, onSele
               let icon = <Sparkles className="w-4 h-4 text-indigo-500" />;
               let badgeColor = "bg-indigo-50 border-indigo-200 text-indigo-900";
 
-              if (textContent.toLowerCase().includes("big picture")) {
+              if (textContent.toLowerCase().includes("understanding") || textContent.toLowerCase().includes("what it is") || textContent.toLowerCase().includes("big picture")) {
                 icon = <HeartHandshake className="w-4 h-4 text-indigo-500" />;
-              } else if (textContent.toLowerCase().includes("how it works") || textContent.toLowerCase().includes("plain english")) {
+                badgeColor = "bg-indigo-50 border-indigo-200 text-indigo-900";
+              } else if (textContent.toLowerCase().includes("how it works") || textContent.toLowerCase().includes("plain english") || textContent.toLowerCase().includes("inside the body")) {
                 icon = <Lightbulb className="w-4 h-4 text-amber-500" />;
                 badgeColor = "bg-amber-50 border-amber-200 text-amber-900";
-              } else if (textContent.toLowerCase().includes("what the medical") || textContent.toLowerCase().includes("science shows") || textContent.toLowerCase().includes("evidence")) {
-                icon = <BookOpenCheck className="w-4 h-4 text-emerald-500" />;
+              } else if (textContent.toLowerCase().includes("practical") || textContent.toLowerCase().includes("solutions") || textContent.toLowerCase().includes("what you can do")) {
+                icon = <Apple className="w-4 h-4 text-emerald-500" />;
                 badgeColor = "bg-emerald-50 border-emerald-200 text-emerald-900";
-              } else if (textContent.toLowerCase().includes("practical") || textContent.toLowerCase().includes("guidelines")) {
+              } else if (textContent.toLowerCase().includes("questions") || textContent.toLowerCase().includes("doctor")) {
                 icon = <Stethoscope className="w-4 h-4 text-blue-500" />;
                 badgeColor = "bg-blue-50 border-blue-200 text-blue-900";
-              } else if (textContent.toLowerCase().includes("warning") || textContent.toLowerCase().includes("danger")) {
+              } else if (textContent.toLowerCase().includes("warning") || textContent.toLowerCase().includes("attention") || textContent.toLowerCase().includes("symptoms that need")) {
                 icon = <AlertTriangle className="w-4 h-4 text-rose-500" />;
                 badgeColor = "bg-rose-50 border-rose-200 text-rose-900";
               }

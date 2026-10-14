@@ -452,11 +452,17 @@ def get_all_documents() -> List[Dict[str, Any]]:
         imported = load_imported_documents()
     except Exception:
         imported = []
+
+    try:
+        from app.services.medical_db import medical_db
+        db_docs = medical_db.export_for_vector_store()
+    except Exception:
+        db_docs = []
     
     # Deduplicate by id or title
     seen_ids = set()
     combined = []
-    for doc in SEED_KNOWLEDGE_BASE + guidelines + pubmed_docs + imported:
+    for doc in SEED_KNOWLEDGE_BASE + guidelines + pubmed_docs + imported + db_docs:
         d_id = doc.get("id") or doc.get("title")
         if d_id and d_id in seen_ids:
             continue
