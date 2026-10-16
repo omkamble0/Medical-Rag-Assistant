@@ -97,9 +97,10 @@ class MedicalRAGAgent:
             try:
                 from langchain_openai import ChatOpenAI
                 from langchain_core.prompts import PromptTemplate
+                from pydantic import SecretStr
                 
                 full_prompt = route_prompt(norm_audience, query, context_str)
-                llm = ChatOpenAI(model="gpt-4o", temperature=0.2, api_key=self.api_key)
+                llm = ChatOpenAI(model="gpt-4o", temperature=0.2, api_key=SecretStr(str(self.api_key)))
                 response = llm.invoke(full_prompt)
                 
                 answer_text = response.content

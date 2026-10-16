@@ -29,6 +29,18 @@ SYMPTOM_SYNONYMS: Dict[str, str] = {
     "high bp": "Occipital morning headache",
     "high blood pressure": "Occipital morning headache",
     "hypertension": "Occipital morning headache",
+    "low bp": "Lightheadedness upon standing (Orthostatic dizziness)",
+    "low blood pressure": "Lightheadedness upon standing (Orthostatic dizziness)",
+    "hypotension": "Lightheadedness upon standing (Orthostatic dizziness)",
+    "postural drop": "Lightheadedness upon standing (Orthostatic dizziness)",
+    "low blood sugar": "Tremulousness, diaphoresis, and cold clamminess (Hypoglycemia)",
+    "hypoglycemia": "Tremulousness, diaphoresis, and cold clamminess (Hypoglycemia)",
+    "slow heart rate": "Marked bradycardia, dizziness, and presyncope",
+    "bradycardia": "Marked bradycardia, dizziness, and presyncope",
+    "wet cough": "Productive mucopurulent cough with sputum",
+    "productive cough": "Productive mucopurulent cough with sputum",
+    "spinning room": "Rotational vertigo provoked by head positional changes",
+    "vertigo": "Rotational vertigo provoked by head positional changes",
     "chest pain": "Chest tightness",
     "chest pressure": "Chest tightness",
     "short of breath": "Dyspnea on exertion",
@@ -227,7 +239,16 @@ class MedicalDatabase:
 
         if query:
             q_clean = query.strip().lower()
-            q_tokens = q_clean.split()
+            STOPWORDS = {
+                "in", "on", "at", "to", "for", "of", "with", "a", "an", "the", "and",
+                "or", "is", "are", "by", "as", "from", "what", "how", "tell", "me",
+                "about", "causes", "does", "have", "has", "can", "treat", "treatment",
+                "treatments", "management", "first", "line", "patient", "diagnosed"
+            }
+            raw_tokens = [t.strip() for t in re.split(r"[^a-zA-Z0-9]+", q_clean) if t.strip()]
+            q_tokens = [t for t in raw_tokens if len(t) >= 3 and t not in STOPWORDS]
+            if not q_tokens:
+                q_tokens = [t for t in raw_tokens if len(t) >= 2]
 
             def match_score(r: DiseaseRecord) -> int:
                 score = 0
@@ -237,25 +258,37 @@ class MedicalDatabase:
                 r_overview = r.overview.lower()
 
                 if q_clean == r_name:
-                    return 1000
+                    return 2000
                 if q_clean in r_name:
-                    score += 200
+                    score += 500
                 if q_clean in r_icd:
-                    score += 150
+                    score += 300
                 if q_clean in r_spec:
                     score += 50
 
+                # Clean base name without parentheses
+                base_name = re.sub(r"\(.*?\)", "", r_name).strip()
+                if q_clean in base_name or (len(base_name) >= 4 and base_name in q_clean):
+                    score += 400
+
+                # Acronyms in parens (e.g. HCM, AAA, BPPV, PPD, PCOS)
+                parens = re.findall(r"\((.*?)\)", r_name)
+                for p in parens:
+                    p_clean = p.strip()
+                    if p_clean in raw_tokens:
+                        score += 600
+
                 for t in q_tokens:
                     if t in r_name:
-                        score += 30
+                        score += 150
                     if t in r_overview:
-                        score += 10
+                        score += 20
                     for s in r.symptoms:
                         if t in s.name.lower():
-                            score += 15
+                            score += 40
                     for sol in r.solutions:
                         if t in sol.name.lower():
-                            score += 15
+                            score += 25
                 return score
 
             scored = [(r, match_score(r)) for r in results]
@@ -490,56 +523,69 @@ class MedicalDatabase:
     # ============================================================
 
     def search_hybrid(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
-        """Executes dense vector search over the medical database via Qdrant."""
+        """Executes Hybrid Search combining Lexical matching and Dense Vector Retrieval."""
         clean_q = query.strip()
         if not clean_q or not self._records:
             return []
 
+        # 1. Lexical search candidates
+        lex_candidates = self.get_diseases(query=clean_q, limit=max(top_k * 2, 8))
+        lex_map = {d.id: idx for idx, d in enumerate(lex_candidates, 1)}
+
+        # 2. Vector search candidates via Qdrant
+        vec_candidates: Dict[str, float] = {}
         if self._qdrant_ready and self._qdrant_client:
             try:
                 vec = self._text_to_vector(clean_q, dim=128)
                 hits = self._qdrant_client.query_points(
                     collection_name=COLLECTION_NAME,
                     query=vec,
-                    limit=top_k
+                    limit=max(top_k * 2, 8)
                 ).points
-
-                results = []
                 for hit in hits:
-                    d_id = hit.payload.get("disease_id")
-                    rec = self._by_id.get(d_id)
-                    if rec:
-                        results.append({
-                            "disease_id": rec.id,
-                            "name": rec.name,
-                            "icd10": rec.icd10_code,
-                            "specialty": rec.specialty,
-                            "similarity_score": round(float(hit.score), 3),
-                            "overview": rec.overview,
-                            "symptoms": [s.name for s in rec.symptoms[:4]],
-                            "solutions": [s.name for s in rec.solutions[:2]],
-                            "papers": [p.title for p in rec.research_papers[:1]]
-                        })
-                if results:
-                    return results
+                    if hit.payload:
+                        d_id = hit.payload.get("disease_id")
+                        if d_id:
+                            vec_candidates[d_id] = float(hit.score)
             except Exception as e:
-                print(f"[!] Qdrant query notice, falling back to lexical search: {e}")
+                pass
 
-        # Lexical fallback
-        diseases = self.get_diseases(query=clean_q, limit=top_k)
+        # 3. Reciprocal Rank Fusion / Weighted Hybrid Ranking
+        fused_candidates = []
+        all_ids = set(lex_map.keys()) | set(vec_candidates.keys())
+
+        for d_id in all_ids:
+            rec = self._by_id.get(d_id)
+            if not rec:
+                continue
+
+            # Calibrated lexical score: top lexical match receives high confidence
+            r_lex = lex_map.get(d_id, 99)
+            lex_score = max(0.1, 1.0 - ((r_lex - 1) * 0.15)) if d_id in lex_map else 0.0
+
+            # Normalized dense vector score
+            vec_score = vec_candidates.get(d_id, 0.0)
+
+            # Combined hybrid score (boost strong lexical hits while retaining semantic generalization)
+            hybrid_score = (lex_score * 0.70) + (vec_score * 0.30)
+            fused_candidates.append((hybrid_score, rec))
+
+        fused_candidates.sort(key=lambda x: x[0], reverse=True)
+        selected = fused_candidates[:top_k]
+
         return [
             {
-                "disease_id": d.id,
-                "name": d.name,
-                "icd10": d.icd10_code,
-                "specialty": d.specialty,
-                "similarity_score": 0.85,
-                "overview": d.overview,
-                "symptoms": [s.name for s in d.symptoms[:4]],
-                "solutions": [s.name for s in d.solutions[:2]],
-                "papers": [p.title for p in d.research_papers[:1]]
+                "disease_id": rec.id,
+                "name": rec.name,
+                "icd10": rec.icd10_code,
+                "specialty": rec.specialty,
+                "similarity_score": round(score, 3),
+                "overview": rec.overview,
+                "symptoms": [s.name for s in rec.symptoms[:4]],
+                "solutions": [s.name for s in rec.solutions[:2]],
+                "papers": [p.title for p in rec.research_papers[:1]]
             }
-            for d in diseases
+            for score, rec in selected
         ]
 
     def export_for_vector_store(self) -> List[Dict[str, Any]]:
@@ -568,6 +614,8 @@ class MedicalDatabase:
                     "patient_plain_language": r.patient_plain_language,
                     "doctor_consultation_checklist": r.doctor_checklist.model_dump() if r.doctor_checklist else None,
                     "red_flags": r.red_flags,
+                    "evidence_stack": r.evidence_stack,
+                    "plain_analogy": (r.evidence_stack.get("stack_1_medlineplus", {}).get("plain_analogy") if r.evidence_stack else ""),
                     "solution_protocol": {
                         "non_pharmacological_targets": r.solutions[1].description if len(r.solutions) > 1 else "",
                         "clinical_thresholds": r.solutions[0].dosage_or_protocol if r.solutions else "",

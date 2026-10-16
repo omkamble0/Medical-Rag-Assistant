@@ -1,9 +1,5 @@
-try:
-    from pydantic_settings import BaseSettings
-except ImportError:
-    from pydantic import BaseModel as BaseSettings
-
 from typing import List
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "AegisMed Clinical Truth Engine"
@@ -13,6 +9,11 @@ class Settings(BaseSettings):
     # LLM & Vector Store Settings
     OPENAI_API_KEY: str = "placeholder_key"
     ANTHROPIC_API_KEY: str = "placeholder_key"
+    GEMINI_API_KEY: str = ""
+    GROQ_API_KEY: str = ""
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3.2"
+    OLLAMA_TIMEOUT: float = 20.0
     QDRANT_HOST: str = "localhost"
     QDRANT_PORT: int = 6333
     QDRANT_COLLECTION: str = "clinical_evidence_v1"

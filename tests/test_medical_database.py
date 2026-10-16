@@ -29,6 +29,7 @@ class TestMedicalDatabase(unittest.TestCase):
         """Verifies full clinical dossier lookup by ID."""
         record = medical_db.get_disease_by_id("DOC-CARD-001")
         self.assertIsNotNone(record)
+        assert record is not None
         self.assertEqual(record.name, "Essential Hypertension")
         self.assertEqual(record.icd10_code, "I10")
         self.assertEqual(record.specialty, "Cardiovascular")
@@ -71,6 +72,7 @@ class TestMedicalDatabase(unittest.TestCase):
         )
         res = medical_db.check_symptoms(req)
         self.assertIsNotNone(res.emergency_alert)
+        assert res.emergency_alert is not None
         self.assertIn("CLINICAL ACUITY ADVISORY", res.emergency_alert)
 
     def test_solutions_and_papers_search(self):

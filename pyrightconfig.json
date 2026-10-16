@@ -1,0 +1,12 @@
+{
+  "include": [
+    "api",
+    "tests"
+  ],
+  "extraPaths": [
+    "api",
+    "."
+  ],
+  "reportMissingImports": "none",
+  "reportMissingTypeStubs": "none"
+}

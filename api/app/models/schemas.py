@@ -75,6 +75,8 @@ class SourceDocument(BaseModel):
     snippet: str = Field(..., description="Verified excerpt supporting the generated claims")
     relevance_score: float = Field(..., description="Cosine similarity / retriever score (0.0 to 1.0)")
     key_takeaway: Optional[str] = Field(None, description="One-line clinical summary of the finding")
+    plain_analogy: Optional[str] = Field(None, description="Patient-friendly mechanism analogy")
+    patient_plain_language: Optional[str] = Field(None, description="Patient plain language overview")
 
 class ConfidenceMetrics(BaseModel):
     overall_score: float = Field(..., description="Composite confidence score 0.0 - 1.0")

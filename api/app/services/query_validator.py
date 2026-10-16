@@ -25,13 +25,16 @@ class MedicalQueryValidator:
             "original": val["original"],
             "corrected": val["corrected"],
             "is_valid": len(corrections_made) == 0,
+            "needs_correction": val.get("needs_correction", len(corrections_made) > 0),
             "corrections_made": corrections_made,
+            "corrections": val.get("corrections", []),
             "confidence_score": val.get("confidence", 1.0),
+            "confidence": val.get("confidence", 1.0),
             "medical_terms_found": medical_terms_found,
             "medical_terms_details": [
                 {"term": t, "category": "medical_concept"} for t in medical_terms_found
             ],
-            "issues": ["Medical misspelling detected"] if val["needs_correction"] else []
+            "issues": ["Medical misspelling detected"] if val.get("needs_correction") else []
         }
 
 validator = MedicalQueryValidator()

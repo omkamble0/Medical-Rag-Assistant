@@ -16,8 +16,11 @@ class ValidationResponse(BaseModel):
     original: str
     corrected: str
     is_valid: bool
+    needs_correction: Optional[bool] = None
     corrections_made: List[str]
+    corrections: Optional[List[Dict[str, Any]]] = None
     confidence_score: float
+    confidence: Optional[float] = None
     medical_terms_found: List[str]
     medical_terms_details: Optional[List[Dict[str, Any]]] = None
     issues: List[str]

@@ -8,6 +8,7 @@ import {
   Stethoscope, CheckCircle2, FileCheck2, ShieldCheck,
   Layers, FlaskConical, GitCompare, AlertOctagon
 } from "lucide-react";
+import { AgentTraceViewer } from "@/components/agent-trace-viewer";
 
 interface ClinicianViewProps {
   response: SearchResponse;
@@ -17,6 +18,7 @@ interface ClinicianViewProps {
 }
 
 export function ClinicianView({ response, activeCitation, onSelectCitation, onSelectElaboration }: ClinicianViewProps) {
+  const [showBackendTrace, setShowBackendTrace] = React.useState(false);
   // Helper to inject interactive citation badges into text nodes
   const renderInlineCitations = (content: string) => {
     const parts = content.split(/(\[\d+(?:,\s*\d+)*\])/g);
@@ -213,6 +215,28 @@ export function ClinicianView({ response, activeCitation, onSelectCitation, onSe
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Backend LangGraph Multi-Agent Execution Trace (Hidden by default to keep clinical suggestions clean) */}
+      {response.execution_trace && response.execution_trace.length > 0 && (
+        <div className="pt-4 border-t border-slate-800/60">
+          <button
+            onClick={() => setShowBackendTrace(!showBackendTrace)}
+            className="text-xs font-mono text-slate-500 hover:text-slate-300 flex items-center gap-1.5 transition-colors"
+          >
+            <span>{showBackendTrace ? "▲ Hide" : "▼ Show"} Backend Execution Trace ({response.execution_trace.length} nodes)</span>
+          </button>
+          {showBackendTrace && (
+            <div className="pt-2">
+              <AgentTraceViewer
+                traceSteps={response.execution_trace}
+                toolResults={response.tool_results}
+                cragGrade={response.crag_grade}
+                groundingAudit={response.grounding_audit}
+              />
             </div>
           )}
         </div>

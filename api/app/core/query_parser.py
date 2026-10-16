@@ -25,8 +25,8 @@ class ExpandedClinicalQuery(BaseModel):
 
 
 class Demographics(BaseModel):
-    age_group: Optional[str] = Field(None, description="pediatric, adult, geriatric, or unspecified")
-    pregnancy_status: Optional[str] = Field(None, description="pregnant, postpartum, non-pregnant, or unspecified")
+    age_group: Optional[str] = Field(default=None, description="pediatric, adult, geriatric, or unspecified")
+    pregnancy_status: Optional[str] = Field(default=None, description="pregnant, postpartum, non-pregnant, or unspecified")
     comorbidities: List[str] = Field(default_factory=list, description="Explicitly mentioned comorbidities")
 
 
@@ -64,6 +64,71 @@ class ParsedQueryAnalysis(BaseModel):
 
 # --- Comprehensive Layperson-to-Clinical Medical Lexicon & Ontology ---
 LAYPERSON_CLINICAL_MAP: List[Dict[str, Any]] = [
+    {
+        "patterns": [r"\b(low\s*(blood\s*pressure|bp)|hypotension|postural\s*drop|orthostatic\s*(hypotension|drop)|blood\s*pressure\s*(is\s*too\s*low|dropped|falling|crashed|plunged))\b"],
+        "clinical_synonyms": [
+            "Orthostatic Hypotension (Postural Low Blood Pressure)",
+            "Autonomic Failure Hypotension",
+            "Fludrocortisone / Midodrine Pressor Therapy",
+            "Volume Expansion & Sodium Liberalization",
+            "Withhold Antihypertensive Vasodilators"
+        ],
+        "is_common_ailment": False,
+        "primary_label": "Orthostatic Hypotension (Low Blood Pressure)"
+    },
+    {
+        "patterns": [r"\b(high\s*(blood\s*pressure|bp)|hypertension|stage\s*[12]\s*hypertension|elevated\s*blood\s*pressure|elevated\s*bp)\b"],
+        "clinical_synonyms": [
+            "Essential Hypertension",
+            "ACC/AHA Guideline Blood Pressure Management",
+            "ACEi / ARB / CCB Guideline Therapy",
+            "DASH Diet Sodium Restriction"
+        ],
+        "is_common_ailment": True,
+        "primary_label": "Essential Hypertension (High Blood Pressure)"
+    },
+    {
+        "patterns": [r"\b(low\s*(blood\s*sugar|sugar|glucose)|hypoglycemia|hypoglycemic|sugar\s*(drop|crash|fell|plunged)|insulin\s*shock)\b"],
+        "clinical_synonyms": [
+            "Acute Hypoglycemia (Whipple Triad)",
+            "Rule of 15 Fast-Acting Carbohydrates",
+            "Glucagon Emergency Protocol",
+            "Dextrose 50% IV"
+        ],
+        "is_common_ailment": False,
+        "primary_label": "Acute Hypoglycemia (Low Blood Sugar)"
+    },
+    {
+        "patterns": [r"\b(slow\s*(heart\s*rate|pulse|heartbeat)|bradycardia|heart\s*block|av\s*block|sick\s*sinus)\b"],
+        "clinical_synonyms": [
+            "Sinus Bradycardia",
+            "Complete Atrioventricular (AV) Block",
+            "Sick Sinus Syndrome",
+            "Dual-Chamber Pacemaker Evaluation"
+        ],
+        "is_common_ailment": False,
+        "primary_label": "Sinus Bradycardia / Atrioventricular Block"
+    },
+    {
+        "patterns": [r"\b(dry\s*cough|tickle\s*cough|hacking\s*cough|cough\s*without\s*phlegm|non[\s-]*productive\s*cough)\b"],
+        "clinical_synonyms": [
+            "Acute Non-Productive Dry Cough",
+            "Cough Reflex Hypersensitivity",
+            "Dextromethorphan Antitussive"
+        ],
+        "is_common_ailment": True,
+        "primary_label": "Acute Non-Productive Dry Cough"
+    },
+    {
+        "patterns": [r"\b(wet\s*cough|productive\s*cough|coughing\s*up\s*(phlegm|mucus|sputum)|chest\s*congestion\s*cough)\b"],
+        "clinical_synonyms": [
+            "Acute Productive Cough",
+            "Bronchial Mucopurulent Secretions",
+            "Guaifenesin Expectorant"
+        ],
+        "is_common_ailment": True,
+        "primary_label": "Acute Productive Cough (Phlegm / Sputum)"
+    },
     {
         "patterns": [r"\b(cold|common cold|head cold|runny nose|sneezing|stuffy nose|nasal drip)\b"],
         "clinical_synonyms": ["Acute Viral Upper Respiratory Infection", "Acute Rhinosinusitis", "Coryza", "Nasopharyngitis", "Viral Rhinitis"],
@@ -313,6 +378,52 @@ LAYPERSON_CLINICAL_MAP: List[Dict[str, Any]] = [
         "is_common_ailment": False,
         "primary_label": "Hyperkalemia"
     },
+    {
+        "patterns": [r"\b(panic attack|panic attacks|panic disorder|sudden terror|heart racing fear of dying|agoraphobia|fear of leaving home)\b"],
+        "clinical_synonyms": [
+            "Panic Disorder & Agoraphobia",
+            "Cognitive Behavioral Therapy (CBT)",
+            "Selective Serotonin Reuptake Inhibitors (SSRIs - Sertraline / Escitalopram)",
+            "Cochrane Systematic Review: Bighelli I et al (2024)",
+            "Interoceptive Exposure Protocol"
+        ],
+        "is_common_ailment": False,
+        "primary_label": "Panic Disorder & Agoraphobia"
+    },
+    {
+        "patterns": [r"\b(anxiety|chronic anxiety|generalized anxiety|constant worry|on edge|nervous breakdown|gad)\b"],
+        "clinical_synonyms": [
+            "Generalized Anxiety Disorder (GAD)",
+            "GAD-7 Assessment Staging",
+            "First-Line SSRI / SNRI Pharmacotherapy",
+            "Evidence-Based Cognitive Behavioral Therapy (CBT)",
+            "NICE Clinical Guideline 113"
+        ],
+        "is_common_ailment": True,
+        "primary_label": "Generalized Anxiety Disorder (GAD)"
+    },
+    {
+        "patterns": [r"\b(depression|major depression|severe sadness|loss of interest|anhedonia|feeling hopeless|mdd)\b"],
+        "clinical_synonyms": [
+            "Major Depressive Disorder (MDD)",
+            "PHQ-9 Clinical Depression Screening",
+            "Second-Generation Antidepressants (SSRIs / SNRIs)",
+            "Interpersonal Psychotherapy (IPT) & CBT",
+            "APA Clinical Practice Guideline for Depression"
+        ],
+        "is_common_ailment": True,
+        "primary_label": "Major Depressive Disorder (MDD)"
+    },
+    {
+        "patterns": [r"\b(evidence[- ]based treatments?|best treatments?|first[- ]line (therap(y|ies)|treatments?)|guideline[- ]directed)\b"],
+        "clinical_synonyms": [
+            "Oxford CEBM Level 1 Evidence",
+            "Systematic Reviews & Meta-Analyses",
+            "Clinical Practice Guidelines (WHO / NICE / APA / Cochrane)"
+        ],
+        "is_common_ailment": False,
+        "primary_label": "Evidence-Based Clinical Guidelines"
+    },
 ]
 
 
@@ -371,7 +482,8 @@ CONDITION_PATTERNS = [
     (r"\b(copd|chronic obstructive pulmonary|emphysema|chronic bronchitis)\b", "Chronic Obstructive Pulmonary Disease (COPD)"),
     (r"\b(hyperlipidemia|hypercholesterolemia|high cholesterol|dyslipidemia|elevated ldl)\b", "Hyperlipidemia / Dyslipidemia"),
     (r"\b(heart failure|congestive heart failure|hfpef|hfref|cardiac insufficiency)\b", "Heart Failure"),
-    (r"\b(anxiety|generalized anxiety|panic disorder|gad|panic attack)\b", "Generalized Anxiety Disorder"),
+    (r"\b(panic disorder|panic attack|panic attacks|agoraphobia)\b", "Panic Disorder & Agoraphobia"),
+    (r"\b(anxiety|generalized anxiety|chronic anxiety|gad|nervousness)\b", "Generalized Anxiety Disorder (GAD)"),
     (r"\b(major depression|depressive disorder|mdd|clinical depression)\b", "Major Depressive Disorder"),
     (r"\b(chronic kidney disease|ckd|renal failure|nephropathy)\b", "Chronic Kidney Disease (CKD)"),
     (r"\b(atrial fibrillation|afib|a-fib|arrhythmia)\b", "Atrial Fibrillation"),

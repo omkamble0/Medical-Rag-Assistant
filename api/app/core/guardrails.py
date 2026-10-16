@@ -80,8 +80,8 @@ def evaluate_safety_guardrails(query: str) -> Optional[EmergencyTriageAlert]:
 
     # Check euphemistic crisis patterns
     for euphemism_pat, cat in EUPHEMISTIC_EMERGENCY_PATTERNS:
-        if re.search(euphemism_pat, query_lower):
-            match = re.search(euphemism_pat, query_lower)
+        match = re.search(euphemism_pat, query_lower)
+        if match:
             matched_triggers.append(match.group(0))
             category = cat
 

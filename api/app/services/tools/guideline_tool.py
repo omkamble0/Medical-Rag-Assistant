@@ -1,3 +1,4 @@
+# pyrefly: ignore-errors[missing-import]
 """
 Clinical Practice Guidelines Search Tool
 Searches authoritative international guideline recommendations
@@ -5,7 +6,7 @@ Searches authoritative international guideline recommendations
 """
 
 from typing import List, Dict, Any
-from langchain_core.tools import tool
+from langchain_core.tools import tool  # type: ignore # pyrefly: ignore
 
 CONSENSUS_GUIDELINES: List[Dict[str, Any]] = [
     {
@@ -16,6 +17,7 @@ CONSENSUS_GUIDELINES: List[Dict[str, Any]] = [
         "keywords": ["hypertension", "blood pressure", "bp", "dash", "amlodipine", "lisinopril"],
         "recommendation": "Initiate treatment with any of 3 classes of first-line agents: thiazide diuretics, ACE inhibitors/ARBs, or dihydropyridine calcium channel blockers. Dual combination therapy recommended for baseline SBP >= 20 mmHg over target.",
         "target_bp": "< 140/90 mmHg for general adults; < 130/80 mmHg with established CVD.",
+        "clinical_target": "< 140/90 mmHg for general adults; < 130/80 mmHg with established CVD.",
         "evidence_strength": "Strong recommendation, moderate-certainty evidence"
     },
     {
@@ -26,6 +28,7 @@ CONSENSUS_GUIDELINES: List[Dict[str, Any]] = [
         "keywords": ["diabetes", "type 2", "sugar", "glp-1", "semaglutide", "metformin", "sglt2"],
         "recommendation": "In adults with type 2 diabetes and established ASCVD, heart failure, or CKD, an SGLT2 inhibitor and/or GLP-1 receptor agonist with demonstrated CVD benefit is recommended independent of baseline HbA1c or metformin use.",
         "target_bp": "HbA1c < 7.0% for most non-pregnant adults; individualized to 7.5–8.0% in frail elderly.",
+        "clinical_target": "HbA1c < 7.0% for most non-pregnant adults; individualized to 7.5–8.0% in frail elderly.",
         "evidence_strength": "Level A (Highest quality RCT evidence)"
     },
     {
@@ -36,6 +39,7 @@ CONSENSUS_GUIDELINES: List[Dict[str, Any]] = [
         "keywords": ["asthma", "inhaler", "budesonide", "formoterol", "albuterol", "wheezing"],
         "recommendation": "GINA Track 1 (Preferred): As-needed low-dose ICS-formoterol is the preferred reliever across all asthma severities. SABA-only treatment without concurrent inhaled corticosteroid is no longer recommended due to increased mortality risk.",
         "target_bp": "Zero nighttime awakenings, normal pulmonary function (FEV1 > 80%).",
+        "clinical_target": "Zero nighttime awakenings, normal pulmonary function (FEV1 > 80%).",
         "evidence_strength": "Evidence Level A"
     },
     {
@@ -46,6 +50,7 @@ CONSENSUS_GUIDELINES: List[Dict[str, Any]] = [
         "keywords": ["cholesterol", "statin", "ldl", "atorvastatin", "pcsk9", "hyperlipidemia"],
         "recommendation": "High-intensity statin therapy (Atorvastatin 40-80 mg or Rosuvastatin 20-40 mg) achieving >= 50% LDL-C reduction recommended for secondary prevention in ASCVD. Add ezetimibe if LDL remains >= 70 mg/dL.",
         "target_bp": "LDL-C < 55 mg/dL in very high-risk ASCVD patients.",
+        "clinical_target": "LDL-C < 55 mg/dL in very high-risk ASCVD patients.",
         "evidence_strength": "Class I, Level A"
     },
     {
@@ -56,6 +61,7 @@ CONSENSUS_GUIDELINES: List[Dict[str, Any]] = [
         "keywords": ["covid", "coronavirus", "paxlovid", "remdesivir", "nirmatrelvir"],
         "recommendation": "In ambulatory patients with mild-to-moderate COVID-19 at high risk of progression, IDSA strongly recommends ritonavir-boosted nirmatrelvir (Paxlovid) initiated within 5 days of symptom onset.",
         "target_bp": "Prevention of hospitalization and death; prompt viral load decay.",
+        "clinical_target": "Prevention of hospitalization and death; prompt viral load decay.",
         "evidence_strength": "Strong recommendation, high certainty evidence"
     }
 ]
@@ -81,9 +87,6 @@ def search_consensus_guidelines(query: str, max_results: int = 3) -> List[Dict[s
 
     scored.sort(key=lambda x: x[0], reverse=True)
     top_matches = [item[1] for item in scored if item[0] > 0][:max_results]
-
-    if not top_matches:
-        top_matches = CONSENSUS_GUIDELINES[:max_results]
 
     return top_matches
 

@@ -1,0 +1,18 @@
+# pyrefly.toml
+search-path = [
+    "api",
+    "tests",
+    "."
+]
+
+site-package-path = [
+    "C:/Python314/Lib/site-packages",
+    "C:/Users/Om Kamble/AppData/Roaming/Python/Python314/site-packages"
+]
+
+[errors]
+missing-import = false
+missing-attribute = false
+missing-module-attribute = false
+misplaced-ignore = false
+

@@ -292,21 +292,48 @@ MEDICAL_SYNONYM_MAP: Dict[str, List[str]] = {
     "heart failure": ["chf", "hfref", "entresto", "sacubitril", "valsartan", "ejection fraction"],
     "afib": ["atrial fibrillation", "apixaban", "eliquis", "warfarin", "anticoagulation", "stroke"],
     "migraine": ["headache", "cgrp", "erenumab", "triptan", "sumatriptan"],
-    "anxiety": ["gad", "panic", "ssri", "sertraline", "escitalopram", "cbt"],
-    "depression": ["mdd", "antidepressant", "ssri", "sertraline", "escitalopram"]
+    "panic": ["panic disorder", "agoraphobia", "panic attack", "cbt", "ssri", "sertraline", "escitalopram", "cochrane", "bighelli"],
+    "anxiety": ["panic", "gad", "generalized anxiety", "ssri", "snri", "sertraline", "escitalopram", "cbt", "cognitive behavioral therapy"],
+    "depression": ["mdd", "antidepressant", "ssri", "sertraline", "escitalopram", "cbt", "phq-9"],
+    "treatment": ["therapy", "medication", "first-line", "guideline", "protocol", "intervention", "evidence-based"],
+    "treatments": ["therapies", "medications", "first-line", "guidelines", "protocols", "interventions", "evidence-based"],
+    "evidence": ["trials", "rct", "meta-analysis", "systematic review", "cebm", "cochrane", "lancet", "nejm", "jama", "clinical guidelines"],
+    "stroke": ["ischemic stroke", "tia", "thrombolysis", "thrombectomy", "alteplase", "tenecteplase", "aspirin"],
+    "dvt": ["deep vein thrombosis", "pulmonary embolism", "pe", "doac", "apixaban", "rivaroxaban"],
+    "pe": ["pulmonary embolism", "dvt", "venous thromboembolism", "vte"],
+    "gerd": ["acid reflux", "heartburn", "omeprazole", "ppi", "esophagitis"],
+    "gout": ["colchicine", "allopurinol", "uric acid", "hyperuricemia"],
+    "arthritis": ["osteoarthritis", "rheumatoid arthritis", "nsaid", "joint"]
+}
+
+STOP_WORDS: Set[str] = {
+    "what", "when", "where", "which", "who", "whom", "whose", "why", "how",
+    "are", "is", "was", "were", "been", "being", "have", "has", "had", "does", "do", "did",
+    "can", "could", "shall", "should", "will", "would", "may", "might", "must",
+    "the", "and", "or", "for", "with", "from", "that", "this", "these", "those",
+    "in", "on", "at", "to", "by", "of", "about", "into", "as", "than", "so", "such"
 }
 
 
 def _tokenize(text: str) -> List[str]:
-    """Tokenize and sanitize text into distinct lowercase tokens."""
+    """Tokenize and sanitize text into distinct lowercase tokens, preserving hyphenated terms."""
     clean = text.lower()
-    for ch in [",", ".", "?", "!", "(", ")", "/", "-", ":", ";", "'", '"', "[", "]", "{", "}", "*", "#", "_", "`"]:
+    # Extract hyphenated compound medical terms like 'evidence-based', 'glp-1', 'sars-cov-2'
+    hyphenated = re.findall(r'\b[a-z0-9]+-[a-z0-9]+\b', clean)
+    for ch in [",", ".", "?", "!", "(", ")", "/", ":", ";", "'", '"', "[", "]", "{", "}", "*", "#", "_", "`"]:
         clean = clean.replace(ch, " ")
-    return [w.strip() for w in clean.split() if len(w.strip()) > 1]
+    # Replace non-compound hyphens with spaces
+    clean = re.sub(r'(?<![a-z0-9])-|-(?![a-z0-9])', ' ', clean)
+    
+    tokens = [w.strip() for w in clean.split() if len(w.strip()) > 1]
+    for h in hyphenated:
+        if h not in tokens:
+            tokens.append(h)
+    return tokens
 
 
 def _expand_query_tokens(tokens: List[str]) -> List[str]:
-    """Expands query with domain medical synonyms and acronyms."""
+    """Expands query with domain medical synonyms and acronyms, prioritizing content words."""
     expanded = list(tokens)
     for t in tokens:
         if t in MEDICAL_SYNONYM_MAP:
@@ -334,8 +361,12 @@ class BM25Index:
         doc_tokens_list: List[List[str]] = []
 
         for doc_id, doc in enumerate(self.corpus):
-            # Concatenate all high-signal fields
-            text_corpus = f"{doc['title']} {' '.join(doc['keywords'])} {doc['snippet']} {doc.get('key_takeaway', '')}"
+            # Concatenate all high-signal fields with title and keywords reinforced
+            text_corpus = (
+                f"{doc.get('title', '')} {doc.get('title', '')} "
+                f"{' '.join(doc.get('keywords', []))} {' '.join(doc.get('keywords', []))} "
+                f"{doc.get('key_takeaway', '')} {doc.get('snippet', '')}"
+            )
             tokens = _tokenize(text_corpus)
             self.doc_lengths.append(len(tokens))
             total_len += len(tokens)
@@ -382,33 +413,51 @@ class BM25Index:
 
 
 # ============================================================
-# Dense / Semantic Representation Scorer
-# Character & Token Bi-gram Cosine Vector Similarity
+# Enhanced Dense / Semantic Representation Scorer
+# Word Unigrams, Bigrams, Subword Character n-grams & Multi-Field Weighting
 # ============================================================
 class DenseSemanticScorer:
     def __init__(self, corpus: List[Dict[str, Any]]):
         self.corpus = corpus
-        self.doc_vectors = [self._vectorize(f"{d['title']} {' '.join(d['keywords'])} {d['snippet']}") for d in corpus]
+        self.doc_vectors = [self._vectorize_doc(d) for d in corpus]
 
-    def _vectorize(self, text: str) -> Dict[str, float]:
+    def _add_to_vec(self, vec: Dict[str, float], text: str, weight: float = 1.0):
         tokens = _tokenize(text)
-        vec: Dict[str, float] = {}
-        # Word unigrams and bigrams
         for i, t in enumerate(tokens):
-            vec[t] = vec.get(t, 0.0) + 1.0
+            vec[t] = vec.get(t, 0.0) + (1.0 * weight)
             if i < len(tokens) - 1:
                 bigram = f"{t}_{tokens[i+1]}"
-                vec[bigram] = vec.get(bigram, 0.0) + 1.5
+                vec[bigram] = vec.get(bigram, 0.0) + (1.5 * weight)
+            # Character 3-grams and 4-grams for robust morphological matching
+            if len(t) >= 4:
+                for n in (3, 4):
+                    for j in range(len(t) - n + 1):
+                        ngram = f"#{t[j:j+n]}"
+                        vec[ngram] = vec.get(ngram, 0.0) + (0.35 * weight)
 
-        # Normalize L2
+    def _normalize(self, vec: Dict[str, float]) -> Dict[str, float]:
         norm = math.sqrt(sum(v * v for v in vec.values()))
         if norm > 0:
             for k in vec:
                 vec[k] /= norm
         return vec
 
+    def _vectorize_doc(self, doc: Dict[str, Any]) -> Dict[str, float]:
+        vec: Dict[str, float] = {}
+        # Differentiated field weights: Title 3.0x, Keywords 2.5x, Key Takeaway 2.0x, Snippet 1.0x
+        self._add_to_vec(vec, doc.get("title", ""), weight=3.0)
+        self._add_to_vec(vec, " ".join(doc.get("keywords", [])), weight=2.5)
+        self._add_to_vec(vec, doc.get("key_takeaway", ""), weight=2.0)
+        self._add_to_vec(vec, doc.get("snippet", ""), weight=1.0)
+        return self._normalize(vec)
+
+    def _vectorize_query(self, query: str) -> Dict[str, float]:
+        vec: Dict[str, float] = {}
+        self._add_to_vec(vec, query, weight=1.0)
+        return self._normalize(vec)
+
     def score(self, query: str) -> List[Tuple[int, float]]:
-        q_vec = self._vectorize(query)
+        q_vec = self._vectorize_query(query)
         scores: List[Tuple[int, float]] = []
 
         for doc_id, d_vec in enumerate(self.doc_vectors):
@@ -534,9 +583,11 @@ def retrieve_clinical_evidence(
     for syn in clinical_synonyms:
         query_tokens.extend(_tokenize(syn))
     expanded_tokens = _expand_query_tokens(query_tokens)
+    content_tokens = [t for t in expanded_tokens if t not in STOP_WORDS]
+    bm25_tokens = content_tokens if content_tokens else expanded_tokens
 
     # 1. Sparse BM25 Ranking (only positive score docs receive a rank)
-    bm25_ranked = _BM25_INDEX.score(expanded_tokens)
+    bm25_ranked = _BM25_INDEX.score(bm25_tokens)
     positive_bm25 = [item for item in bm25_ranked if item[1] > 0.001]
     sparse_ranks: Dict[int, int] = {doc_id: rank for rank, (doc_id, score) in enumerate(positive_bm25, start=1)}
 
@@ -575,8 +626,12 @@ def retrieve_clinical_evidence(
         if final_score >= relevance_threshold:
             fused_scores.append((doc_id, final_score, doc))
 
-    # Sort descending by CEBM-weighted score
-    fused_scores.sort(key=lambda x: x[1], reverse=True)
+    # Apply False-Twin Polarity Disambiguation (Demote opposite twins, boost direct matches)
+    try:
+        from app.core.polarity_disambiguator import adjust_document_scores_for_polarity
+        fused_scores = adjust_document_scores_for_polarity(clean_query, fused_scores)
+    except Exception:
+        fused_scores.sort(key=lambda x: x[1], reverse=True)
 
     if not fused_scores:
         return []  # No hallucinated/unrelated fallbacks
@@ -615,7 +670,9 @@ def retrieve_clinical_evidence(
                 evidence_level=doc_data["evidence_level"],
                 snippet=doc_data["snippet"],
                 relevance_score=round(calibrated_rel, 2),
-                key_takeaway=doc_data.get("key_takeaway")
+                key_takeaway=doc_data.get("key_takeaway"),
+                plain_analogy=doc_data.get("plain_analogy"),
+                patient_plain_language=doc_data.get("patient_plain_language")
             )
         )
 

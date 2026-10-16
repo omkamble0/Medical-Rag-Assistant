@@ -56,7 +56,7 @@ async def import_diseases_endpoint(payload: BulkImportRequest):
 @router.post("/knowledge/add-paper")
 async def add_custom_paper_endpoint(paper: AddPaperRequest):
     """Manually adds a verified clinical paper with DOI/PMID and Oxford CEBM grading."""
-    doc_dict = paper.dict()
+    doc_dict = paper.model_dump() if hasattr(paper, "model_dump") else paper.dict()
     added = add_documents([doc_dict])
     if added == 0:
         raise HTTPException(status_code=409, detail="Paper with this ID or DOI/PMID already exists.")

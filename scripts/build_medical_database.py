@@ -28,6 +28,7 @@ sys.path.insert(0, str(BASE_DIR / "api"))
 
 from scripts.ingest_disease_list import ALL_DISEASES
 from scripts.disease_metadata import DISEASE_METADATA
+from scripts.assemble_dataset import NEW_ICD10_MAP
 
 OUTPUT_JSON_PATH = BASE_DIR / "api" / "app" / "data" / "medical_database.json"
 
@@ -135,6 +136,9 @@ ICD10_MAP: Dict[str, str] = {
     "DOC-CARD-100": "E87.5",   # Hyperkalemia
 }
 
+# Integrate 100 new ICD-10 mappings
+ICD10_MAP.update(NEW_ICD10_MAP)
+
 # Clinical specialty fallback symptoms and drug templates for conditions not explicitly in DISEASE_METADATA
 SPECIALTY_SYMPTOM_TEMPLATES: Dict[str, List[Dict[str, Any]]] = {
     "Cardiovascular": [
@@ -206,6 +210,83 @@ SPECIALTY_SYMPTOM_TEMPLATES: Dict[str, List[Dict[str, Any]]] = {
         {"name": "Fatigue and anemia-related weakness", "frequency": "common", "severity": "moderate", "description": "Due to reduced erythropoietin and uremic toxin buildup."},
         {"name": "Hypertension", "frequency": "common", "severity": "moderate", "description": "Volume overload and hyperreninemia driving elevated blood pressure."},
         {"name": "Pruritus and metallic taste", "frequency": "occasional", "severity": "mild", "description": "Uremic symptoms in advanced renal compromise."}
+    ],
+    "Urology": [
+        {"name": "Urinary urgency and frequency", "frequency": "hallmark", "severity": "moderate", "description": "Compelling, sudden desire to void with high voiding frequency."},
+        {"name": "Dysuria or pelvic discomfort", "frequency": "hallmark", "severity": "moderate", "description": "Burning or aching discomfort during micturition or in the suprapubic/perineal region."},
+        {"name": "Hesitancy or weak urinary stream", "frequency": "common", "severity": "moderate", "description": "Difficulty initiating voiding and reduced stream velocity."},
+        {"name": "Nocturia", "frequency": "common", "severity": "mild", "description": "Waking multiple times at night to urinate."},
+        {"name": "Hematuria (Gross or microscopic)", "frequency": "occasional", "severity": "severe", "description": "Presence of red blood cells in urine."}
+    ],
+    "Hematology": [
+        {"name": "Fatigue and exertional weakness", "frequency": "hallmark", "severity": "moderate", "description": "Persistent physical exhaustion due to cytopenias or altered viscosity."},
+        {"name": "Pallor or mucosal changes", "frequency": "common", "severity": "moderate", "description": "Paleness of conjunctivae, palms, or nailbeds."},
+        {"name": "Easy bruising or petechiae", "frequency": "common", "severity": "moderate", "description": "Subcutaneous micro-hemorrhages or ecchymoses on minimal trauma."},
+        {"name": "Dizziness or postural lightheadedness", "frequency": "common", "severity": "mild", "description": "Transient presyncope upon standing from tissue hypoxia."},
+        {"name": "Lymphadenopathy or splenomegaly", "frequency": "occasional", "severity": "moderate", "description": "Painless lymph node or splenic enlargement."}
+    ],
+    "Orthopedics": [
+        {"name": "Joint and tendon pain", "frequency": "hallmark", "severity": "moderate", "description": "Localized musculoskeletal ache exacerbated by weight-bearing or joint motion."},
+        {"name": "Stiffness and restricted range of motion", "frequency": "hallmark", "severity": "moderate", "description": "Difficulty fully flexing, extending, or rotating affected limb."},
+        {"name": "Local tenderness and swelling", "frequency": "common", "severity": "moderate", "description": "Focal point tenderness and soft-tissue effusion over tendon or joint."},
+        {"name": "Crepitus or clicking sensation", "frequency": "common", "severity": "mild", "description": "Palpable or audible friction during active movement."},
+        {"name": "Functional weakness / Weight-bearing deficit", "frequency": "occasional", "severity": "severe", "description": "Inability to lift, carry, or ambulate normally."}
+    ],
+    "Critical Care": [
+        {"name": "Hypotension and altered hemodynamics", "frequency": "hallmark", "severity": "severe", "description": "Mean arterial pressure < 65 mmHg with delayed capillary refill."},
+        {"name": "Tachypnea and respiratory distress", "frequency": "hallmark", "severity": "severe", "description": "Elevated breathing rate (>22/min) with increased work of breathing."},
+        {"name": "Altered mental status / Encephalopathy", "frequency": "common", "severity": "severe", "description": "Acute confusion, lethargy, or reduced Glasgow Coma Scale."},
+        {"name": "Oliguria / Low urine output", "frequency": "common", "severity": "severe", "description": "Urine output < 0.5 mL/kg/hr indicating hypoperfusion."},
+        {"name": "Lactic acidosis and hypothermia/hyperthermia", "frequency": "occasional", "severity": "severe", "description": "Elevated lactate and dysregulated core temperature."}
+    ],
+    "Gynecology": [
+        {"name": "Abnormal uterine bleeding / Menorrhagia", "frequency": "hallmark", "severity": "moderate", "description": "Heavy, prolonged, or unscheduled menstrual blood loss."},
+        {"name": "Pelvic pain or pressure", "frequency": "hallmark", "severity": "moderate", "description": "Chronic lower abdominal cramping, fullness, or dyspareunia."},
+        {"name": "Fatigue related to iron loss", "frequency": "common", "severity": "moderate", "description": "Exhaustion secondary to recurrent chronic menorrhagia."},
+        {"name": "Urinary frequency or constipation from bulk effect", "frequency": "common", "severity": "mild", "description": "Mechanical compression of adjacent bladder or bowel."},
+        {"name": "Dysmenorrhea (Painful menses)", "frequency": "occasional", "severity": "moderate", "description": "Severe cyclical uterine cramping with menses."}
+    ],
+    "Pediatrics": [
+        {"name": "Barking cough or respiratory stridor", "frequency": "hallmark", "severity": "severe", "description": "Inspiratory high-pitched sound and harsh seal-like cough."},
+        {"name": "Tachypnea and chest retractions", "frequency": "hallmark", "severity": "severe", "description": "Rapid breathing with intercostal/subcostal tugging and nasal flaring."},
+        {"name": "Fever and irritability", "frequency": "common", "severity": "moderate", "description": "Elevated body temperature with fussiness and difficulty feeding."},
+        {"name": "Poor oral intake and dehydration", "frequency": "common", "severity": "moderate", "description": "Decreased wet diapers, dry lips, and crying without tears."},
+        {"name": "Lethargy or reduced activity", "frequency": "occasional", "severity": "severe", "description": "Unusual sleepiness and diminished responsiveness to parents."}
+    ],
+    "Ophthalmology": [
+        {"name": "Visual blurring or decreased acuity", "frequency": "hallmark", "severity": "moderate", "description": "Loss of sharpness, difficulty reading, or hazy visual field."},
+        {"name": "Floaters or dark cobwebs in vision", "frequency": "common", "severity": "moderate", "description": "Drifting spots or strands moving across field of view."},
+        {"name": "Ocular discomfort, grittiness, or dryness", "frequency": "common", "severity": "mild", "description": "Foreign body sensation or burning of ocular surface."},
+        {"name": "Metamorphopsia (Distorted straight lines)", "frequency": "occasional", "severity": "moderate", "description": "Straight doorways or tiles appearing wavy or bent."},
+        {"name": "Photopsia / Light flashes", "frequency": "occasional", "severity": "severe", "description": "Flickering lights or sparks in peripheral vision."}
+    ],
+    "ENT / Otolaryngology": [
+        {"name": "Rotational vertigo / Room spinning", "frequency": "hallmark", "severity": "severe", "description": "Brief, intense spinning sensation provoked by head positional changes."},
+        {"name": "Nausea and postural unsteadiness", "frequency": "hallmark", "severity": "moderate", "description": "Disequilibrium, motion sickness, and nausea with head movement."},
+        {"name": "Ear fullness or tinnitus", "frequency": "common", "severity": "mild", "description": "Ringing or perceived pressure inside ear canal."},
+        {"name": "Nasal congestion or facial pressure", "frequency": "common", "severity": "mild", "description": "Sinus congestion or rhinorrhea."},
+        {"name": "Nystagmus", "frequency": "occasional", "severity": "moderate", "description": "Involuntary rhythmic jerk of eyes during positional testing."}
+    ],
+    "Otolaryngology": [
+        {"name": "Rotational vertigo / Room spinning", "frequency": "hallmark", "severity": "severe", "description": "Brief, intense spinning sensation provoked by head positional changes."},
+        {"name": "Hearing impairment or tinnitus", "frequency": "common", "severity": "moderate", "description": "Subjective reduction in hearing acuity or persistent ringing."},
+        {"name": "Ear fullness or otalgia", "frequency": "common", "severity": "mild", "description": "Pressure, stuffiness, or localized pain within the ear canal."},
+        {"name": "Nasal congestion or rhinorrhea", "frequency": "common", "severity": "mild", "description": "Mucosal swelling and obstruction of nasal passages."},
+        {"name": "Postural disequilibrium", "frequency": "occasional", "severity": "moderate", "description": "Unsteadiness and gait imbalance exacerbated by positional changes."}
+    ],
+    "Genetics": [
+        {"name": "Multisystem connective tissue laxity / pain", "frequency": "hallmark", "severity": "moderate", "description": "Joint hypermobility, tissue fragility, or chronic widespread pain."},
+        {"name": "Skin hyperextensibility or vascular fragility", "frequency": "common", "severity": "moderate", "description": "Easy bruising, spontaneous bleeding, or excessive skin elasticity."},
+        {"name": "Premature skeletal or organ compromise", "frequency": "common", "severity": "moderate", "description": "Early-onset degenerative changes or aneurysmal predisposition."},
+        {"name": "Chronic fatigue and autonomic instability", "frequency": "common", "severity": "moderate", "description": "Orthostatic intolerance and systemic physical exhaustion."},
+        {"name": "Familial trait recurrence", "frequency": "occasional", "severity": "mild", "description": "Inherited pattern observed across multiple generational relatives."}
+    ],
+    "Oncology": [
+        {"name": "Systemic B-symptoms (Fever / Night sweats / Weight loss)", "frequency": "hallmark", "severity": "severe", "description": "Unexplained fevers, drenching nocturnal sweats, and involuntary cachexia."},
+        {"name": "Severe chronic fatigue and weakness", "frequency": "hallmark", "severity": "severe", "description": "Profound neoplastic exhaustion refractory to rest."},
+        {"name": "Painless lymphadenopathy or localized mass", "frequency": "common", "severity": "moderate", "description": "Firm, fixed, or enlarging lymph nodes or palpable soft tissue mass."},
+        {"name": "Cytopenia-related manifestations (Bleeding/Infections)", "frequency": "common", "severity": "severe", "description": "Spontaneous bruising, petechiae, recurrent infections, or pallor."},
+        {"name": "Bone pain or localized organ tenderness", "frequency": "occasional", "severity": "moderate", "description": "Deep skeletal ache from marrow involvement or localized capsule distension."}
     ]
 }
 
@@ -215,7 +296,7 @@ def build_condition_record(raw_item: Dict[str, Any]) -> Dict[str, Any]:
     condition = raw_item["condition"]
     specialty = raw_item.get("specialty", "General Medicine")
     organ_system = raw_item.get("organ_system", "Multisystem")
-    icd10 = ICD10_MAP.get(c_id, "R69")
+    icd10 = raw_item.get("icd10") or ICD10_MAP.get(c_id, "R69")
 
     # Check if specific clinical metadata exists in DISEASE_METADATA
     custom_meta = DISEASE_METADATA.get(c_id, {})
@@ -336,6 +417,9 @@ def build_condition_record(raw_item: Dict[str, Any]) -> Dict[str, Any]:
         "doctor_checklist": checklist,
         "keywords": list(kw_set)
     }
+
+    if "evidence_stack" in raw_item:
+        record["evidence_stack"] = raw_item["evidence_stack"]
 
     return record
 

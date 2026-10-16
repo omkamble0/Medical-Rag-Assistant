@@ -6,14 +6,19 @@ Generates:
 2. web/src/lib/suggestions.ts (rich search chips and guidelines)
 """
 
+import sys
 import json
 import re
 from pathlib import Path
+from typing import Any, Dict, List
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BASE_DIR))
 
 DATA_JSON_PATH = Path("api/app/data/imported_knowledge.json")
 SUGGESTIONS_TS_PATH = Path("web/src/lib/suggestions.ts")
 
-ALL_DISEASES = [
+ALL_DISEASES: List[Dict[str, Any]] = [
   # ── LIST 1 (001 - 050) ────────────────────────────────────────────
   {
     "id": "DOC-CARD-001",
@@ -2701,6 +2706,9 @@ ALL_DISEASES = [
   }
 ]
 
+from scripts.assemble_dataset import ALL_NEW_DISEASES
+ALL_DISEASES.extend(ALL_NEW_DISEASES)
+
 DOMAIN_MAP = {
     "Cardiovascular": "CARDIOVASCULAR",
     "Cardiology & Emergency Medicine": "CARDIOVASCULAR",
@@ -2712,6 +2720,7 @@ DOMAIN_MAP = {
     "Endocrinology & Women's Health": "ENDOCRINOLOGY_METABOLISM",
     "Gastroenterology": "GASTROENTEROLOGY",
     "Gastroenterology & General Surgery": "GASTROENTEROLOGY",
+    "Gastroenterology & Infectious Disease": "GASTROENTEROLOGY",
     "General Surgery": "GASTROENTEROLOGY",
     "Hepatology": "GASTROENTEROLOGY",
     "Hepatology & Infectious Disease": "GASTROENTEROLOGY",
@@ -2721,6 +2730,7 @@ DOMAIN_MAP = {
     "Nephrology & Emergency Medicine": "NEPHROLOGY",
     "Infectious Disease": "INFECTIOUS_DISEASE",
     "Infectious Disease & Urology": "INFECTIOUS_DISEASE",
+    "Infectious Disease & Orthopedics": "INFECTIOUS_DISEASE",
     "Critical Care & Infectious Disease": "INFECTIOUS_DISEASE",
     "Infectious Disease & Neurology": "INFECTIOUS_DISEASE",
     "Allergy & Immunology / Emergency Medicine": "INFECTIOUS_DISEASE",
@@ -2733,9 +2743,13 @@ DOMAIN_MAP = {
     "Neurology & Otolaryngology": "NEUROLOGY",
     "Neurology & Sports Medicine": "NEUROLOGY",
     "Neurology & Sleep Medicine": "NEUROLOGY",
+    "Neurology & Orthopedics": "NEUROLOGY",
+    "Neurology & Pain Medicine": "NEUROLOGY",
     "Orthopedics & Neurology": "NEUROLOGY",
     "Rheumatology": "RHEUMATOLOGY",
     "Rheumatology & Ophthalmology": "RHEUMATOLOGY",
+    "Orthopedics & Rheumatology": "RHEUMATOLOGY",
+    "Genetics & Rheumatology": "RHEUMATOLOGY",
     "Women's Health": "WOMENS_HEALTH",
     "Women's Health & Infectious Disease": "WOMENS_HEALTH",
     "Obstetrics & Gynecology / Emergency": "WOMENS_HEALTH",
@@ -2743,9 +2757,20 @@ DOMAIN_MAP = {
     "Pediatrics": "PEDIATRICS",
     "Pediatrics / Neonatology": "PEDIATRICS",
     "Dermatology": "DERMATOLOGY",
+    "Dermatology & Oncology": "DERMATOLOGY",
     "Allergy & Dermatology": "DERMATOLOGY",
     "Hematology": "CARDIOVASCULAR",
-    "Oncology": "ONCOLOGY"
+    "Hematology & Nephrology": "NEPHROLOGY",
+    "Hematology & Oncology": "ONCOLOGY",
+    "Oncology": "ONCOLOGY",
+    "Urology": "NEPHROLOGY",
+    "Orthopedics": "RHEUMATOLOGY",
+    "Critical Care": "EMERGENCY_MEDICINE",
+    "Gynecology": "WOMENS_HEALTH",
+    "ENT / Otolaryngology": "GENERAL_MEDICINE",
+    "ENT": "GENERAL_MEDICINE",
+    "Otolaryngology": "GENERAL_MEDICINE",
+    "Ophthalmology": "OPHTHALMOLOGY"
 }
 
 CATEGORY_ICONS = {
@@ -2767,7 +2792,15 @@ CATEGORY_ICONS = {
     "Pediatrics": "🧸",
     "Dermatology": "🧴",
     "Hematology": "🩸",
-    "Oncology": "🎗️"
+    "Oncology": "🎗️",
+    "Urology": "💧",
+    "Orthopedics": "🦴",
+    "Critical Care": "🚨",
+    "Gynecology": "🌸",
+    "ENT": "👂",
+    "Otolaryngology": "👂",
+    "Genetics": "🧬",
+    "Ophthalmology": "👁️"
 }
 
 
@@ -2809,6 +2842,8 @@ def transform_to_knowledge_base():
             "red_flags": item.get("red_flags", []),
             "solution_protocol": item.get("solution_protocol")
         }
+        if "evidence_stack" in item:
+            doc["evidence_stack"] = item["evidence_stack"]
         formatted_docs.append(doc)
 
         # Generate Frontend Suggestion Chip

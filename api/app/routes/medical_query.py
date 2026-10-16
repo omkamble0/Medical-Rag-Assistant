@@ -46,7 +46,8 @@ async def validate_query_endpoint(payload: ValidateQueryRequest):
     and returns suggested corrections and confidence scores.
     """
     try:
-        return guard.validate(payload.query)
+        from app.services.query_validator import validator
+        return validator.validate_and_correct(payload.query)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

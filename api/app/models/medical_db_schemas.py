@@ -52,6 +52,7 @@ class DiseaseRecord(BaseModel):
     research_papers: List[ResearchPaper] = Field(default_factory=list, description="Peer-reviewed research evidence and trials")
     doctor_checklist: Optional[DoctorChecklist] = Field(default=None, description="Guidance questions for clinical visits")
     keywords: List[str] = Field(default_factory=list, description="Searchable indexing keywords")
+    evidence_stack: Optional[Dict[str, Any]] = Field(default=None, description="3-Stack evidence layer (MedlinePlus, OpenFDA, PubMed/CEBM)")
 
 class SymptomCheckerRequest(BaseModel):
     symptoms: List[str] = Field(..., min_length=1, description="List of patient symptoms (e.g. ['chest pain', 'shortness of breath'])")

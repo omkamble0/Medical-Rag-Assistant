@@ -20,7 +20,7 @@ from app.core.prompts import MANDATORY_DISCLAIMER, normalize_audience, route_pro
 from app.services.crag.query_rewriter import rewrite_clinical_query, ClinicalQueryDecomposition
 from app.services.crag.retrieval_grader import grade_retrieval_relevance, RetrievalGradeResult
 from app.services.crag.reranker import rerank_evidence_documents
-from app.services.crag.hallucination_grader import audit_hallucinations_and_grounding, GroundingAuditResult
+from app.services.crag.hallucination_grader import audit_hallucinations_and_grounding, avoid_hallucinations, GroundingAuditResult
 from app.services.tools.drug_interaction import check_drug_interactions
 from app.services.tools.clinical_calculator import (
     calculate_egfr, calculate_bmi, calculate_cha2ds2_vasc, calculate_wells_pe
@@ -126,7 +126,7 @@ def node_query_deconstruct(state: AgenticWorkflowState) -> AgenticWorkflowState:
 # NODE 3: Autonomous Clinical Tool Execution
 # ─────────────────────────────────────────────────────────────
 def node_tool_execution(state: AgenticWorkflowState) -> AgenticWorkflowState:
-    decomp = state.get("decomposition", {})
+    decomp = state.get("decomposition") or {}
     tools_executed: Dict[str, Any] = {}
 
     # Tool A: Drug-Drug Interaction Check
@@ -202,7 +202,7 @@ def node_tool_execution(state: AgenticWorkflowState) -> AgenticWorkflowState:
 # ─────────────────────────────────────────────────────────────
 def node_retrieval_and_rerank(state: AgenticWorkflowState) -> AgenticWorkflowState:
     query = state.get("effective_query") or state.get("raw_query", "")
-    decomp = state.get("decomposition", {})
+    decomp = state.get("decomposition") or {}
     sub_queries = decomp.get("sub_queries", [query])
 
     # Fetch from clinical vector store
@@ -369,7 +369,8 @@ def node_audience_synthesis(state: AgenticWorkflowState) -> AgenticWorkflowState
 def node_self_rag_audit(state: AgenticWorkflowState) -> AgenticWorkflowState:
     answer = state.get("generated_answer", "")
     docs = state.get("retrieved_documents", [])
-    audit: GroundingAuditResult = audit_hallucinations_and_grounding(answer, docs)
+    cleaned_answer, audit = avoid_hallucinations(answer, docs)
+    state["generated_answer"] = cleaned_answer
     state["grounding_audit"] = audit.model_dump()
     state["status"] = "COMPLETED"
 
@@ -394,8 +395,8 @@ def _synthesize_high_fidelity(query: str, docs: List[Dict[str, Any]], tools: Dic
     matched_disease = None
     try:
         hits = medical_db.search_hybrid(query, top_k=1)
-        if hits:
-            matched_disease = medical_db.get_disease_by_id(hits[0].get("id"))
+        if hits and hits[0].get("id"):
+            matched_disease = medical_db.get_disease_by_id(str(hits[0].get("id")))
     except Exception as e:
         logger.debug(f"medical_db lookup error in synthesis: {e}")
 
@@ -570,7 +571,7 @@ def _synthesize_high_fidelity(query: str, docs: List[Dict[str, Any]], tools: Dic
 # Graph Construction & Compilation
 # ─────────────────────────────────────────────────────────────
 def build_agentic_rag_graph():
-    builder = StateGraph(AgenticWorkflowState)
+    builder = StateGraph(AgenticWorkflowState)  # type: ignore[bad-specialization]
 
     builder.add_node("triage_interceptor", node_triage_interceptor)
     builder.add_node("query_deconstruct", node_query_deconstruct)

@@ -39,7 +39,7 @@ export function AgentTraceViewer({
   groundingAudit,
   providerName = "LangGraph Multi-Agent Orchestrator"
 }: AgentTraceViewerProps) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [expandedStep, setExpandedStep] = useState<number | null>(null);
 
   if (!traceSteps || traceSteps.length === 0) {

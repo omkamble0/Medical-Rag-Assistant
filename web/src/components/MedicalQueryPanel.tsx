@@ -271,6 +271,24 @@ export function MedicalQueryPanel() {
             {result.answer}
           </div>
 
+          {/* Autonomous Multi-Agent Execution Trace (Hidden by default to keep clean suggestions) */}
+          {result.execution_trace && result.execution_trace.length > 0 && (
+            <details className="pt-2 group">
+              <summary className="cursor-pointer text-xs font-mono text-slate-500 hover:text-slate-300 py-1 transition-colors select-none">
+                ▶ View Multi-Agent Execution Trace ({result.execution_trace.length} nodes)
+              </summary>
+              <div className="pt-2">
+                <AgentTraceViewer
+                  traceSteps={result.execution_trace as any}
+                  toolResults={result.tool_results}
+                  cragGrade={result.crag_grade}
+                  groundingAudit={result.grounding_audit}
+                  providerName={result.provider}
+                />
+              </div>
+            </details>
+          )}
+
           {/* Evidence Sources Accordion */}
           {result.sources && result.sources.length > 0 && (
             <div className="pt-4 border-t border-slate-800/80 space-y-3">

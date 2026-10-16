@@ -9,6 +9,14 @@ import logging
 from typing import Dict, Any, Optional, List
 import httpx
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+from pydantic import SecretStr
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,30 +25,82 @@ class MedicalLLMGateway:
     Unified LLM Gateway with seamless multi-provider cascade:
     1. OpenAI (if OPENAI_API_KEY is configured)
     2. Groq (if GROQ_API_KEY is configured)
-    3. Ollama (if running locally at localhost:11434)
-    4. Local High-Fidelity Clinical Synthesis Engine (instant offline fallback)
+    3. Google Gemini (if GEMINI_API_KEY or GOOGLE_API_KEY is configured)
+    4. Ollama (if running locally at localhost:11434)
+    5. Local High-Fidelity Clinical Synthesis Engine (instant offline fallback)
     """
 
     def __init__(self):
-        self.openai_key = os.getenv("OPENAI_API_KEY", "")
-        self.groq_key = os.getenv("GROQ_API_KEY", "")
-        self.gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY", "")
-        self.ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        pass
+
+    @property
+    def openai_key(self) -> str:
+        k = os.getenv("OPENAI_API_KEY", "")
+        if not k:
+            try:
+                from app.config import settings
+                k = getattr(settings, "OPENAI_API_KEY", "")
+            except Exception:
+                pass
+        return "" if k.startswith("placeholder") else k
+
+    @property
+    def groq_key(self) -> str:
+        k = os.getenv("GROQ_API_KEY", "")
+        if not k:
+            try:
+                from app.config import settings
+                k = getattr(settings, "GROQ_API_KEY", "")
+            except Exception:
+                pass
+        return "" if k.startswith("placeholder") else k
+
+    @property
+    def gemini_key(self) -> str:
+        k = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY", "")
+        if not k:
+            try:
+                from app.config import settings
+                k = getattr(settings, "GEMINI_API_KEY", "")
+            except Exception:
+                pass
+        return "" if k.startswith("placeholder") else k
+
+    @property
+    def ollama_url(self) -> str:
+        u = os.getenv("OLLAMA_BASE_URL", "")
+        if not u:
+            try:
+                from app.config import settings
+                u = getattr(settings, "OLLAMA_BASE_URL", "http://localhost:11434")
+            except Exception:
+                pass
+        return u or "http://localhost:11434"
+
+    @property
+    def ollama_timeout(self) -> float:
+        try:
+            from app.config import settings
+            default_t = getattr(settings, "OLLAMA_TIMEOUT", 20.0)
+        except Exception:
+            default_t = 20.0
+        return float(os.getenv("OLLAMA_TIMEOUT", str(default_t)))
 
     def get_active_provider_info(self) -> Dict[str, Any]:
         """Returns detected provider availability status."""
-        has_openai = bool(self.openai_key and not self.openai_key.startswith("placeholder") and len(self.openai_key) > 10)
-        has_groq = bool(self.groq_key and not self.groq_key.startswith("placeholder") and len(self.groq_key) > 10)
-        has_gemini = bool(self.gemini_key and not self.gemini_key.startswith("placeholder") and len(self.gemini_key) > 10)
+        has_openai = bool(self.openai_key and len(self.openai_key) > 10)
+        has_groq = bool(self.groq_key and len(self.groq_key) > 10)
+        has_gemini = bool(self.gemini_key and len(self.gemini_key) > 10)
 
-        # Quick check for Ollama
+        # Quick check for Ollama only if cloud providers are not configured and Ollama not disabled
         has_ollama = False
-        try:
-            with httpx.Client(timeout=0.6) as client:
-                res = client.get(f"{self.ollama_url}/api/tags")
-                has_ollama = res.status_code == 200
-        except Exception:
-            has_ollama = False
+        if not (has_openai or has_groq or has_gemini) and os.getenv("DISABLE_OLLAMA", "").lower() not in ("1", "true", "yes"):
+            try:
+                with httpx.Client(timeout=0.4) as client:
+                    res = client.get(f"{self.ollama_url}/api/tags")
+                    has_ollama = res.status_code == 200
+            except Exception:
+                has_ollama = False
 
         active_provider = "Local High-Fidelity Engine"
         if has_openai:
@@ -82,17 +142,17 @@ class MedicalLLMGateway:
                 llm = ChatOpenAI(
                     model=model_name or "gpt-4o",
                     temperature=temperature,
-                    api_key=self.openai_key,
+                    api_key=SecretStr(self.openai_key),
                     timeout=10.0
                 )
-                messages = []
+                messages: List[Any] = []
                 if system_prompt:
                     messages.append(SystemMessage(content=system_prompt))
                 messages.append(HumanMessage(content=prompt))
 
                 resp = llm.invoke(messages)
                 return {
-                    "content": resp.content,
+                    "content": str(resp.content),
                     "provider": "OpenAI",
                     "model": model_name or "gpt-4o",
                     "status": "success"
@@ -109,18 +169,18 @@ class MedicalLLMGateway:
                 llm = ChatOpenAI(
                     model=model_name or "llama-3.3-70b-versatile",
                     temperature=temperature,
-                    api_key=self.groq_key,
+                    api_key=SecretStr(self.groq_key),
                     base_url="https://api.groq.com/openai/v1",
                     timeout=10.0
                 )
-                messages = []
+                messages: List[Any] = []
                 if system_prompt:
                     messages.append(SystemMessage(content=system_prompt))
                 messages.append(HumanMessage(content=prompt))
 
                 resp = llm.invoke(messages)
                 return {
-                    "content": resp.content,
+                    "content": str(resp.content),
                     "provider": "Groq",
                     "model": model_name or "llama-3.3-70b-versatile",
                     "status": "success"
@@ -128,12 +188,73 @@ class MedicalLLMGateway:
             except Exception as e:
                 logger.warning(f"Groq call failed, cascading to next provider: {e}")
 
-        # 3. Try Ollama (Local)
+        # 3. Try Google Gemini (OpenAI-compatible endpoint with direct REST fallback)
+        if provider_info["gemini_available"]:
+            try:
+                from langchain_openai import ChatOpenAI
+                from langchain_core.messages import SystemMessage, HumanMessage
+
+                llm = ChatOpenAI(
+                    model=model_name or os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
+                    temperature=temperature,
+                    api_key=SecretStr(self.gemini_key),
+                    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+                    timeout=12.0
+                )
+                messages: List[Any] = []
+                if system_prompt:
+                    messages.append(SystemMessage(content=system_prompt))
+                messages.append(HumanMessage(content=prompt))
+
+                resp = llm.invoke(messages)
+                return {
+                    "content": str(resp.content),
+                    "provider": "Google Gemini",
+                    "model": model_name or os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
+                    "status": "success"
+                }
+            except Exception as e:
+                logger.warning(f"Google Gemini call via OpenAI endpoint failed: {e}. Trying direct REST API...")
+                try:
+                    with httpx.Client(timeout=12.0) as client:
+                        target_model = model_name or os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+                        url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={self.gemini_key}"
+                        combined_text = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+                        payload = {
+                            "contents": [{"parts": [{"text": combined_text}]}],
+                            "generationConfig": {"temperature": temperature}
+                        }
+                        res = client.post(url, json=payload)
+                        if res.status_code == 200:
+                            data = res.json()
+                            candidate_text = data["candidates"][0]["content"]["parts"][0]["text"]
+                            return {
+                                "content": candidate_text,
+                                "provider": "Google Gemini (REST)",
+                                "model": target_model,
+                                "status": "success"
+                            }
+                except Exception as ex2:
+                    logger.warning(f"Google Gemini REST fallback failed, cascading: {ex2}")
+
+        # 4. Try Ollama (Local)
         if provider_info["ollama_available"]:
             try:
-                with httpx.Client(timeout=8.0) as client:
+                with httpx.Client(timeout=self.ollama_timeout) as client:
+                    model_to_use = model_name or os.getenv("OLLAMA_MODEL", "")
+                    if not model_to_use:
+                        try:
+                            tags_res = client.get(f"{self.ollama_url}/api/tags")
+                            if tags_res.status_code == 200:
+                                models = tags_res.json().get("models", [])
+                                if models:
+                                    model_to_use = models[0].get("name", "llama3.2")
+                        except Exception:
+                            pass
+                    model_to_use = model_to_use or "llama3.2"
+
                     payload = {
-                        "model": model_name or "llama3",
+                        "model": model_to_use,
                         "prompt": f"{system_prompt}\n\n{prompt}" if system_prompt else prompt,
                         "stream": False,
                         "options": {"temperature": temperature}
@@ -144,13 +265,13 @@ class MedicalLLMGateway:
                         return {
                             "content": ollama_data.get("response", ""),
                             "provider": "Ollama (Local)",
-                            "model": model_name or "llama3",
+                            "model": model_to_use,
                             "status": "success"
                         }
             except Exception as e:
                 logger.warning(f"Ollama call failed: {e}")
 
-        # 4. Local High-Fidelity Clinical Synthesis Fallback
+        # 5. Local High-Fidelity Clinical Synthesis Fallback
         return {
             "content": None,
             "provider": "AegisMed Local Clinical Synthesis Engine",
@@ -165,7 +286,7 @@ class MedicalLLMGateway:
         model_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Multi-turn chat completion across active provider cascade (OpenAI, Groq, Ollama, local fallback).
+        Multi-turn chat completion across active provider cascade (OpenAI, Groq, Gemini, Ollama, local fallback).
         Accepts list of message dicts: [{'role': 'system'|'user'|'assistant', 'content': '...'}]
         """
         provider_info = self.get_active_provider_info()
@@ -179,10 +300,10 @@ class MedicalLLMGateway:
                 llm = ChatOpenAI(
                     model=model_name or "gpt-4o",
                     temperature=temperature,
-                    api_key=self.openai_key,
+                    api_key=SecretStr(self.openai_key),
                     timeout=12.0
                 )
-                lc_messages = []
+                lc_messages: List[Any] = []
                 for m in messages:
                     r = m.get("role", "user")
                     c = m.get("content", "")
@@ -195,7 +316,7 @@ class MedicalLLMGateway:
 
                 resp = llm.invoke(lc_messages)
                 return {
-                    "content": resp.content,
+                    "content": str(resp.content),
                     "provider": "OpenAI",
                     "model": model_name or "gpt-4o",
                     "status": "success"
@@ -212,11 +333,11 @@ class MedicalLLMGateway:
                 llm = ChatOpenAI(
                     model=model_name or "llama-3.3-70b-versatile",
                     temperature=temperature,
-                    api_key=self.groq_key,
+                    api_key=SecretStr(self.groq_key),
                     base_url="https://api.groq.com/openai/v1",
                     timeout=12.0
                 )
-                lc_messages = []
+                lc_messages: List[Any] = []
                 for m in messages:
                     r = m.get("role", "user")
                     c = m.get("content", "")
@@ -229,7 +350,7 @@ class MedicalLLMGateway:
 
                 resp = llm.invoke(lc_messages)
                 return {
-                    "content": resp.content,
+                    "content": str(resp.content),
                     "provider": "Groq",
                     "model": model_name or "llama-3.3-70b-versatile",
                     "status": "success"
@@ -237,12 +358,86 @@ class MedicalLLMGateway:
             except Exception as e:
                 logger.warning(f"Groq chat call failed, cascading: {e}")
 
-        # 3. Try Ollama (Local Chat API)
+        # 3. Try Google Gemini (OpenAI-compatible endpoint with direct REST fallback)
+        if provider_info["gemini_available"]:
+            try:
+                from langchain_openai import ChatOpenAI
+                from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+
+                llm = ChatOpenAI(
+                    model=model_name or os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
+                    temperature=temperature,
+                    api_key=SecretStr(self.gemini_key),
+                    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+                    timeout=12.0
+                )
+                lc_messages: List[Any] = []
+                for m in messages:
+                    r = m.get("role", "user")
+                    c = m.get("content", "")
+                    if r == "system":
+                        lc_messages.append(SystemMessage(content=c))
+                    elif r == "assistant":
+                        lc_messages.append(AIMessage(content=c))
+                    else:
+                        lc_messages.append(HumanMessage(content=c))
+
+                resp = llm.invoke(lc_messages)
+                return {
+                    "content": str(resp.content),
+                    "provider": "Google Gemini",
+                    "model": model_name or os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
+                    "status": "success"
+                }
+            except Exception as e:
+                logger.warning(f"Google Gemini chat call via OpenAI endpoint failed: {e}. Trying direct REST API...")
+                try:
+                    with httpx.Client(timeout=12.0) as client:
+                        target_model = model_name or os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+                        url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={self.gemini_key}"
+                        # Convert messages to Gemini contents structure
+                        gemini_contents = []
+                        for m in messages:
+                            role = "model" if m.get("role") == "assistant" else "user"
+                            gemini_contents.append({
+                                "role": role,
+                                "parts": [{"text": m.get("content", "")}]
+                            })
+                        payload = {
+                            "contents": gemini_contents,
+                            "generationConfig": {"temperature": temperature}
+                        }
+                        res = client.post(url, json=payload)
+                        if res.status_code == 200:
+                            data = res.json()
+                            candidate_text = data["candidates"][0]["content"]["parts"][0]["text"]
+                            return {
+                                "content": candidate_text,
+                                "provider": "Google Gemini (REST)",
+                                "model": target_model,
+                                "status": "success"
+                            }
+                except Exception as ex2:
+                    logger.warning(f"Google Gemini chat REST fallback failed, cascading: {ex2}")
+
+        # 4. Try Ollama (Local Chat API)
         if provider_info["ollama_available"]:
             try:
-                with httpx.Client(timeout=10.0) as client:
+                with httpx.Client(timeout=self.ollama_timeout) as client:
+                    model_to_use = model_name or os.getenv("OLLAMA_MODEL", "")
+                    if not model_to_use:
+                        try:
+                            tags_res = client.get(f"{self.ollama_url}/api/tags")
+                            if tags_res.status_code == 200:
+                                models = tags_res.json().get("models", [])
+                                if models:
+                                    model_to_use = models[0].get("name", "llama3.2")
+                        except Exception:
+                            pass
+                    model_to_use = model_to_use or "llama3.2"
+
                     payload = {
-                        "model": model_name or "llama3",
+                        "model": model_to_use,
                         "messages": messages,
                         "stream": False,
                         "options": {"temperature": temperature}
@@ -254,13 +449,13 @@ class MedicalLLMGateway:
                         return {
                             "content": msg,
                             "provider": "Ollama (Local)",
-                            "model": model_name or "llama3",
+                            "model": model_to_use,
                             "status": "success"
                         }
             except Exception as e:
                 logger.warning(f"Ollama chat call failed: {e}")
 
-        # 4. Fallback to Local High-Fidelity Multi-Turn Synthesis Engine
+        # 5. Fallback to Local High-Fidelity Multi-Turn Synthesis Engine
         return {
             "content": None,
             "provider": "AegisMed Local Clinical Synthesis Engine",
