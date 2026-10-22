@@ -247,8 +247,12 @@ export function MedicalDatabaseExplorer({
                 <h2 className="text-xl font-bold tracking-tight text-white">
                   AegisMed Clinical Knowledge Base
                 </h2>
-                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-                  Hybrid Qdrant + JSON
+                <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full border ${
+                  stats?.vector_store_status?.includes("Cloud")
+                    ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                    : "bg-cyan-500/15 text-cyan-300 border-cyan-500/30"
+                }`}>
+                  {stats?.vector_store_status?.includes("Cloud") ? "Qdrant Cloud (Online)" : "Hybrid Qdrant + JSON"}
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">

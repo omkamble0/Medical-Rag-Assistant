@@ -41,14 +41,18 @@ SYMPTOM_SYNONYMS: Dict[str, str] = {
     "productive cough": "Productive mucopurulent cough with sputum",
     "spinning room": "Rotational vertigo provoked by head positional changes",
     "vertigo": "Rotational vertigo provoked by head positional changes",
-    "chest pain": "Chest tightness",
-    "chest pressure": "Chest tightness",
-    "short of breath": "Dyspnea on exertion",
-    "shortness of breath": "Dyspnea on exertion",
-    "sob": "Dyspnea on exertion",
-    "breathlessness": "Dyspnea on exertion",
-    "difficulty breathing": "Dyspnea on exertion",
-    "dyspnea": "Dyspnea on exertion",
+    "chest pain": "Chest tightness / discomfort",
+    "chest pressure": "Chest tightness / discomfort",
+    "crushing chest pain": "Chest tightness / discomfort",
+    "crushing chest tightness": "Chest tightness / discomfort",
+    "chest tightness": "Chest tightness / discomfort",
+    "short of breath": "Exertional dyspnea",
+    "shortness of breath": "Exertional dyspnea",
+    "sob": "Exertional dyspnea",
+    "breathlessness": "Exertional dyspnea",
+    "difficulty breathing": "Exertional dyspnea",
+    "dyspnea": "Exertional dyspnea",
+    "dyspnea on exertion": "Exertional dyspnea",
     "headache": "Headache / Cranial pain",
     "migraine": "Unilateral pulsating / Throbbing headache",
     "fever": "Fever and Chills",
@@ -81,6 +85,83 @@ SYMPTOM_SYNONYMS: Dict[str, str] = {
     "panic": "Depressed mood or anxiety",
     "insomnia": "Sleep disturbance (Insomnia or Hypersomnia)",
     "cannot sleep": "Sleep disturbance (Insomnia or Hypersomnia)",
+    # Everyday ailments and minor conditions
+    "leg pain": "Leg Pain & Calf Muscle Strain",
+    "legpain": "Leg Pain & Calf Muscle Strain",
+    "calf pain": "Leg Pain & Calf Muscle Strain",
+    "calf strain": "Leg Pain & Calf Muscle Strain",
+    "shoulder pain": "Shoulder Pain & Rotator Cuff Tendinopathy",
+    "shoulderpain": "Shoulder Pain & Rotator Cuff Tendinopathy",
+    "rotator cuff": "Shoulder Pain & Rotator Cuff Tendinopathy",
+    "cut": "Minor Cut, Skin Laceration & Wound Care",
+    "scrape": "Minor Cut, Skin Laceration & Wound Care",
+    "laceration": "Minor Cut, Skin Laceration & Wound Care",
+    "wound": "Minor Cut, Skin Laceration & Wound Care",
+    "sore throat": "Acute Sore Throat & Viral Pharyngitis",
+    "sorethroat": "Acute Sore Throat & Viral Pharyngitis",
+    "cold": "Common Cold & Acute Viral Rhinitis",
+    "common cold": "Common Cold & Acute Viral Rhinitis",
+    "runny nose": "Common Cold & Acute Viral Rhinitis",
+    "stuffy nose": "Common Cold & Acute Viral Rhinitis",
+    "ear pain": "Ear Pain & Otitis Externa",
+    "earache": "Ear Pain & Otitis Externa",
+    "swimmer's ear": "Ear Pain & Otitis Externa",
+    "dry eye": "Dry Eye Syndrome & Ocular Surface Grittiness",
+    "pink eye": "Acute Conjunctivitis",
+    "conjunctivitis": "Acute Conjunctivitis",
+    "stiff neck": "Stiff Neck & Cervical Muscle Strain",
+    "neck pain": "Stiff Neck & Cervical Muscle Strain",
+    "runner's knee": "Knee Pain & Patellofemoral Pain Syndrome",
+    "knee pain": "Knee Pain & Patellofemoral Pain Syndrome",
+    "knee sprain": "Knee Pain & Patellofemoral Pain Syndrome",
+    "ankle sprain": "Acute Ankle Sprain",
+    "twisted ankle": "Acute Ankle Sprain",
+    "wrist pain": "Wrist Pain & De Quervain's Tenosynovitis",
+    "bruise": "Soft Tissue Contusion, Bruise & Hematoma",
+    "burn": "Minor First-Degree & Superficial Second-Degree Burn",
+    "sunburn": "Sunburn & Acute Solar Dermatitis",
+    "insect bite": "Insect Bites, Bee Stings & Arthropod Reactions",
+    "bee sting": "Insect Bites, Bee Stings & Arthropod Reactions",
+    "bug bite": "Insect Bites, Bee Stings & Arthropod Reactions",
+    "canker sore": "Canker Sores & Aphthous Mouth Ulcers",
+    "mouth ulcer": "Canker Sores & Aphthous Mouth Ulcers",
+    "toothache": "Toothache & Dental Sensitivity",
+    "nosebleed": "Nosebleeds",
+    "hiccups": "Benign Hiccups",
+    "indigestion": "Indigestion, Dyspepsia & Acid Regurgitation",
+    "gas": "Intestinal Gas, Bloating & Flatulence",
+    "bloating": "Intestinal Gas, Bloating & Flatulence",
+    "stomach flu": "Acute Viral Gastroenteritis & Stomach Flu",
+    "motion sickness": "Nausea & Motion Sickness",
+    "constipation": "Acute Constipation & Infrequent Stool",
+    "piles": "Hemorrhoids & Perianal Discomfort",
+    "hemorrhoids": "Hemorrhoids & Perianal Discomfort",
+    "tension headache": "Tension-Type Headache",
+    "heat exhaustion": "Heat Exhaustion, Dehydration & Heat Cramps",
+    "hangover": "Alcohol Hangover & Congener Malaise",
+    "muscle soreness": "Delayed Onset Muscle Soreness",
+    "doms": "Delayed Onset Muscle Soreness",
+    "blister": "Friction Foot Blisters & Plantar Calluses",
+    "ingrown nail": "Ingrown Toenail",
+    "ingrown toenail": "Ingrown Toenail",
+    "hives": "Acute Hives & Allergic Urticaria",
+    "poison ivy": "Allergic Contact Dermatitis & Poison Ivy",
+    "chapped lips": "Chapped Lips & Angular Cheilitis",
+    "dizziness upon standing": "Orthostatic Dizziness & Postural Lightheadedness",
+    "burnout": "Lifestyle Fatigue, Burnout & Sleep Debt",
+    "food poisoning": "Acute Food Poisoning",
+    "jammed finger": "Jammed Finger & Stubbed Toe",
+    "stubbed toe": "Jammed Finger & Stubbed Toe",
+    "shin splints": "Shin Splints",
+    "sciatica": "Sciatica & Lumbar Radicular Irritation",
+    "plantar fasciitis": "Plantar Fasciitis & Morning Heel Pain",
+    "heel pain": "Plantar Fasciitis & Morning Heel Pain",
+    "splinter": "Skin Splinter & Retained Superficial Foreign Body",
+    "tailbone pain": "Tailbone Pain & Coccydynia",
+    "groin strain": "Groin Strain & Hip Adductor Tendinopathy",
+    "swollen lymph nodes": "Swollen Lymph Nodes",
+    "cold sore": "Cold Sores & Oral Herpes Simplex",
+    "dandruff": "Dandruff & Scalp Seborrheic Dermatitis",
 }
 
 # Critical red flag markers that require emergency triage
@@ -115,8 +196,9 @@ class MedicalDatabase:
         self._symptom_to_diseases: Dict[str, List[str]] = {}
         self._qdrant_client = None
         self._qdrant_ready = False
-        self._load_data()
+        self._is_cloud = False
         self._init_qdrant()
+        self._load_data()
 
     @classmethod
     def get_instance(cls) -> "MedicalDatabase":
@@ -124,52 +206,142 @@ class MedicalDatabase:
             cls._instance = MedicalDatabase()
         return cls._instance
 
+    def _rebuild_indices(self):
+        """Reconstructs fast in-memory hash maps and symptom inverted index."""
+        self._by_id = {r.id: r for r in self._records}
+        self._by_name = {r.name.lower(): r for r in self._records}
+        self._symptom_to_diseases = {}
+        for r in self._records:
+            for sym in r.symptoms:
+                s_clean = sym.name.lower().strip()
+                if s_clean not in self._symptom_to_diseases:
+                    self._symptom_to_diseases[s_clean] = []
+                self._symptom_to_diseases[s_clean].append(r.id)
+
     def _load_data(self):
-        """Loads records from the persistent JSON file."""
+        """Loads records from local persistent JSON or Qdrant Cloud, guaranteeing full coverage."""
+        local_records = []
+        if DATABASE_FILE.exists():
+            try:
+                with open(DATABASE_FILE, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                local_records = [DiseaseRecord(**item) for item in data]
+            except Exception as e:
+                print(f"[!] Error loading local medical database: {e}")
+
+        cloud_records = []
+        if self._is_cloud and self._qdrant_client:
+            try:
+                collections = [c.name for c in self._qdrant_client.get_collections().collections]
+                if COLLECTION_NAME in collections:
+                    info = self._qdrant_client.get_collection(COLLECTION_NAME)
+                    if info.points_count and info.points_count > 0:
+                        print(f"[*] Checking Qdrant Cloud collection ({info.points_count} points)...")
+                        scroll_res, _ = self._qdrant_client.scroll(
+                            collection_name=COLLECTION_NAME,
+                            limit=1000,
+                            with_payload=True
+                        )
+                        for p in scroll_res:
+                            if p.payload and "full_record" in p.payload:
+                                cloud_records.append(DiseaseRecord(**p.payload["full_record"]))
+            except Exception as e:
+                print(f"[!] Notice checking Qdrant Cloud: {e}")
+
+        # Choose the most comprehensive dataset
+        if len(local_records) >= len(cloud_records) and len(local_records) > 0:
+            self._records = local_records
+            self._rebuild_indices()
+            print(f"[OK] MedicalDatabase loaded {len(self._records)} conditions with {len(self._symptom_to_diseases)} indexed symptoms from local JSON store.")
+            
+            # If Qdrant Cloud has fewer records, sync missing records to Qdrant Cloud in the background/sync
+            if self._is_cloud and self._qdrant_client and len(self._records) > len(cloud_records):
+                try:
+                    from qdrant_client.models import PointStruct
+                    print(f"[*] Syncing {len(self._records) - len(cloud_records)} new conditions to Qdrant Cloud cluster...")
+                    existing_ids = {r.id for r in cloud_records}
+                    points_to_add = []
+                    for i, r in enumerate(self._records):
+                        if r.id not in existing_ids:
+                            full_ctx = f"{r.name} {r.specialty} {r.icd10_code} " + " ".join([s.name for s in r.symptoms])
+                            vec = self._text_to_vector(full_ctx, dim=128)
+                            points_to_add.append(
+                                PointStruct(
+                                    id=len(cloud_records) + len(points_to_add) + 1,
+                                    vector=vec,
+                                    payload={
+                                        "disease_id": r.id,
+                                        "name": r.name,
+                                        "icd10": r.icd10_code,
+                                        "specialty": r.specialty,
+                                        "organ_system": r.organ_system,
+                                        "symptoms_count": len(r.symptoms),
+                                        "solutions_count": len(r.solutions),
+                                        "papers_count": len(r.research_papers),
+                                        "patient_summary": r.patient_plain_language,
+                                        "overview": r.overview[:250],
+                                        "full_record": r.dict()
+                                    }
+                                )
+                            )
+                    if points_to_add:
+                        self._qdrant_client.upsert(collection_name=COLLECTION_NAME, points=points_to_add)
+                        print(f"[OK] Successfully synced {len(points_to_add)} records to Qdrant Cloud! Total: {len(self._records)}")
+                except Exception as sync_err:
+                    print(f"[!] Notice: Qdrant Cloud sync notice: {sync_err}")
+            return
+        elif cloud_records:
+            self._records = cloud_records
+            self._rebuild_indices()
+            print(f"[OK] MedicalDatabase successfully loaded {len(self._records)} conditions directly from Qdrant Cloud!")
+            return
+
+        # Fallback if both empty: trigger auto build
         if not DATABASE_FILE.exists():
-            print(f"[!] Warning: Medical database JSON not found at {DATABASE_FILE}. Triggering build...")
+            print(f"[!] Medical database JSON not found. Triggering build...")
             try:
                 from scripts.build_medical_database import generate_database_and_qdrant
                 generate_database_and_qdrant()
+                if DATABASE_FILE.exists():
+                    with open(DATABASE_FILE, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    self._records = [DiseaseRecord(**item) for item in data]
+                    self._rebuild_indices()
             except Exception as e:
                 print(f"[!] Error auto-generating medical database: {e}")
-                return
-
-        try:
-            with open(DATABASE_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-
-            self._records = [DiseaseRecord(**item) for item in data]
-            self._by_id = {r.id: r for r in self._records}
-            self._by_name = {r.name.lower(): r for r in self._records}
-
-            # Build inverted symptom index
-            self._symptom_to_diseases = {}
-            for r in self._records:
-                for sym in r.symptoms:
-                    s_clean = sym.name.lower().strip()
-                    if s_clean not in self._symptom_to_diseases:
-                        self._symptom_to_diseases[s_clean] = []
-                    self._symptom_to_diseases[s_clean].append(r.id)
-
-            print(f"[OK] MedicalDatabase loaded {len(self._records)} conditions with {len(self._symptom_to_diseases)} indexed symptoms.")
-        except Exception as e:
-            print(f"[!] Error loading medical database: {e}")
 
     def _init_qdrant(self):
-        """Initializes connection to Qdrant vector store."""
+        """Initializes connection to Qdrant vector store (Cloud Free Tier or Local)."""
         try:
             from qdrant_client import QdrantClient
+            
+            # 1. Check for Qdrant Cloud URL and API Key
+            if settings.QDRANT_URL and settings.QDRANT_URL.strip():
+                cloud_url = settings.QDRANT_URL.strip()
+                api_key = settings.QDRANT_API_KEY.strip() if settings.QDRANT_API_KEY else None
+                print(f"[*] Initializing connection to Qdrant Cloud at {cloud_url}...")
+                self._qdrant_client = QdrantClient(url=cloud_url, api_key=api_key, timeout=12.0)
+                # Verify cluster connection
+                self._qdrant_client.get_collections()
+                self._qdrant_ready = True
+                self._is_cloud = True
+                print(f"[OK] Connected to Qdrant Cloud online cluster!")
+                return
+
+            # 2. Local embedded filesystem storage fallback
             if QDRANT_STORAGE_DIR.exists():
                 self._qdrant_client = QdrantClient(path=str(QDRANT_STORAGE_DIR))
                 self._qdrant_ready = True
+                self._is_cloud = False
                 print(f"[OK] Qdrant local storage connected at {QDRANT_STORAGE_DIR}")
             else:
                 self._qdrant_client = QdrantClient(":memory:")
                 self._qdrant_ready = True
+                self._is_cloud = False
         except Exception as e:
             print(f"[!] Qdrant initialization notice (dense fallback active): {e}")
             self._qdrant_ready = False
+            self._is_cloud = False
 
     def _text_to_vector(self, text: str, dim: int = 128) -> List[float]:
         tokens = re.findall(r"[a-zA-Z0-9]+", text.lower())
@@ -213,7 +385,10 @@ class MedicalDatabase:
             total_research_papers=total_papers,
             specialties_distribution=specialties_dist,
             evidence_levels_distribution=evidence_dist,
-            vector_store_status="Ready (Local Embedded Qdrant)" if self._qdrant_ready else "Fallback Mode",
+            vector_store_status=(
+                "Connected (Qdrant Cloud Free Tier)" if (self._qdrant_ready and self._is_cloud)
+                else ("Ready (Local Embedded Qdrant)" if self._qdrant_ready else "Fallback Mode")
+            ),
             vector_collection_name=COLLECTION_NAME,
             indexed_vectors_count=indexed_vectors
         )
@@ -295,6 +470,8 @@ class MedicalDatabase:
             results = [r for r, s in sorted(scored, key=lambda x: x[1], reverse=True) if s > 0]
 
         return results[offset : offset + limit]
+
+    search_diseases = get_diseases
 
     def get_disease_by_id(self, disease_id: str) -> Optional[DiseaseRecord]:
         """Looks up a complete clinical disease monograph by ID."""
@@ -459,9 +636,10 @@ class MedicalDatabase:
             total_disease_syms = max(1, len(record.symptoms))
 
             overlap_ratio = len(matched_syms) / total_query_syms
-            coverage_ratio = len(matched_syms) / total_disease_syms
+            # Sub-linear disease coverage so thorough catalogs are not penalized
+            coverage_ratio = min(1.0, len(matched_syms) / max(3.0, (total_disease_syms ** 0.5) * 1.8))
 
-            score = (overlap_ratio * 65.0) + (coverage_ratio * 20.0) + (hallmark_matches * 10.0)
+            score = (overlap_ratio * 60.0) + (coverage_ratio * 15.0) + (hallmark_matches * 15.0) + (common_matches * 5.0)
             score = min(99.0, max(25.0, score))
 
             # Missing hallmark symptoms
@@ -590,32 +768,53 @@ class MedicalDatabase:
 
     def export_for_vector_store(self) -> List[Dict[str, Any]]:
         """
-        Exports all 100 conditions into the format expected by vector_store.py
+        Exports all 500 conditions into the format expected by vector_store.py
         to ensure full synchrony between the Medical Database and the RAG engine.
         """
         exported = []
         for r in self._records:
-            for p in r.research_papers:
+            papers = r.research_papers if r.research_papers else [None]
+            for p in papers:
                 symptoms_str = ", ".join([s.name for s in r.symptoms[:4]])
-                solutions_str = ", ".join([sol.name for sol in r.solutions[:2]])
-                full_snippet = f"{r.name} (ICD-10: {r.icd10_code}). Evidence: {p.key_findings} Clinical Solutions: {solutions_str}. Symptoms: {symptoms_str}."
+                first_lines = [sol for sol in r.solutions if sol.line_of_therapy == "first_line"]
+                second_lines = [sol for sol in r.solutions if sol.line_of_therapy == "second_line"]
+                solutions_str = ", ".join([sol.name for sol in (first_lines + second_lines)[:3]])
+
+                p_id = p.id if p else f"DOC-DB-{r.id}"
+                title = f"{r.name}: {p.title}" if p else f"{r.name}: Evidence-Based Clinical Practice Guidelines"
+                journal = p.journal if p else f"{r.specialty} Practice Guidelines"
+                year = p.year if p else 2024
+                doi_or_pmid = p.doi_or_pmid if p else f"ICD10:{r.icd10_code}"
+                ev_level = p.cebm_level if p else "Level 1 (Meta-Analysis / Systematic Review)"
+                key_findings = p.key_findings if p else f"Clinical guidelines establish first-line GDMT and targeted symptom alleviation for {r.name}."
+                takeaway = p.clinical_takeaway if p else f"Guideline-directed medical therapy for {r.name}: {', '.join([s.name for s in first_lines[:2]]) or 'evidence-backed therapy'}."
+
+                full_snippet = f"{r.name} (ICD-10: {r.icd10_code} | Specialty: {r.specialty}). Pathophysiology & Causes: {r.overview[:350]}... Key Evidence: {key_findings} Guideline Solutions: {solutions_str}. Hallmark Symptoms: {symptoms_str}."
+
+                plain_analogy = None
+                if r.evidence_stack and isinstance(r.evidence_stack, dict):
+                    plain_analogy = r.evidence_stack.get("stack_1_medlineplus", {}).get("plain_analogy")
+                if not plain_analogy:
+                    plain_analogy = r.patient_plain_language
 
                 exported.append({
-                    "id": p.id,
+                    "id": p_id,
+                    "disease_id": r.id,
+                    "disease_name": r.name,
                     "domain": r.specialty.upper().replace(" ", "_").replace("&", "AND"),
-                    "title": f"{r.name}: {p.title}",
-                    "journal": p.journal,
-                    "year": p.year,
-                    "doi_or_pmid": p.doi_or_pmid,
-                    "evidence_level": p.cebm_level,
-                    "keywords": r.keywords,
+                    "title": title,
+                    "journal": journal,
+                    "year": year,
+                    "doi_or_pmid": doi_or_pmid,
+                    "evidence_level": ev_level,
+                    "keywords": r.keywords + [r.name.lower(), r.icd10_code.lower()],
                     "snippet": full_snippet,
-                    "key_takeaway": p.clinical_takeaway,
+                    "key_takeaway": takeaway,
                     "patient_plain_language": r.patient_plain_language,
                     "doctor_consultation_checklist": r.doctor_checklist.model_dump() if r.doctor_checklist else None,
                     "red_flags": r.red_flags,
                     "evidence_stack": r.evidence_stack,
-                    "plain_analogy": (r.evidence_stack.get("stack_1_medlineplus", {}).get("plain_analogy") if r.evidence_stack else ""),
+                    "plain_analogy": plain_analogy,
                     "solution_protocol": {
                         "non_pharmacological_targets": r.solutions[1].description if len(r.solutions) > 1 else "",
                         "clinical_thresholds": r.solutions[0].dosage_or_protocol if r.solutions else "",

@@ -17,6 +17,11 @@ def calculate_egfr(creatinine: float, age: int, sex: str) -> Dict[str, Any]:
     Computes estimated Glomerular Filtration Rate (eGFR) using the 2021 CKD-EPI race-free equation.
     Scr in mg/dL, age in years, sex in ['male', 'female'].
     """
+    if creatinine <= 0:
+        raise ValueError("Serum creatinine must be strictly positive (> 0 mg/dL).")
+    if age < 0 or age > 130:
+        raise ValueError("Age must be between 0 and 130 years.")
+
     is_female = sex.strip().lower() in ["f", "female", "woman", "girl"]
     kappa = 0.7 if is_female else 0.9
     alpha = -0.241 if is_female else -0.302
@@ -78,6 +83,8 @@ def calculate_bmi(weight_kg: float, height_cm: float) -> Dict[str, Any]:
     Computes Body Mass Index (BMI) and WHO metabolic category.
     weight in kg, height in cm.
     """
+    if weight_kg <= 0:
+        raise ValueError("Weight must be greater than 0 kg.")
     height_m = height_cm / 100.0
     if height_m <= 0:
         raise ValueError("Height must be greater than 0 cm.")

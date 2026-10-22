@@ -369,7 +369,22 @@ def node_audience_synthesis(state: AgenticWorkflowState) -> AgenticWorkflowState
 def node_self_rag_audit(state: AgenticWorkflowState) -> AgenticWorkflowState:
     answer = state.get("generated_answer", "")
     docs = state.get("retrieved_documents", [])
-    cleaned_answer, audit = avoid_hallucinations(answer, docs)
+    query = state.get("query", "")
+    audience = state.get("audience", "patient")
+    tools = state.get("tool_executions", {})
+    det_fallback = _synthesize_high_fidelity(query, docs, tools, audience)
+    cleaned_answer, audit = avoid_hallucinations(answer, docs, deterministic_fallback=det_fallback)
+
+    # Ensure non-blocking Clinical Acuity Advisory banner is preserved if flagged by Tier 1
+    triage = state.get("triage_alert")
+    if triage and not cleaned_answer.startswith("> ⚠️"):
+        advisory_box = (
+            f"> ⚠️ **{triage.get('title', 'CLINICAL ACUITY ADVISORY')}**\n"
+            f"> {triage.get('message', 'Prompt in-person clinical assessment by a healthcare provider or urgent care clinic is strongly recommended.')}\n"
+            f"> *Red-flag indicators:* {', '.join(triage.get('red_flags', [])[:3])}\n\n"
+        )
+        cleaned_answer = advisory_box + cleaned_answer
+
     state["generated_answer"] = cleaned_answer
     state["grounding_audit"] = audit.model_dump()
     state["status"] = "COMPLETED"

@@ -1,0 +1,379 @@
+{
+  "passed_checks": [
+    {
+      "category": "Database",
+      "title": "Loaded medical_database.json (600 records)"
+    },
+    {
+      "category": "Database",
+      "title": "All records have valid 'id' and 'name'"
+    },
+    {
+      "category": "Database",
+      "title": "All 600 records have valid ICD-10 diagnostic codes"
+    },
+    {
+      "category": "Database",
+      "title": "All 600 records contain clinical symptoms"
+    },
+    {
+      "category": "Database",
+      "title": "All 600 records contain clinical solutions"
+    },
+    {
+      "category": "Database",
+      "title": "All 600 records contain peer-reviewed research papers"
+    },
+    {
+      "category": "Database",
+      "title": "All research papers adhere to valid Oxford CEBM Level schema"
+    },
+    {
+      "category": "Database",
+      "title": "Random sample of 50 conditions passed full structural audit (organ, specialty, red flags, checklist)"
+    },
+    {
+      "category": "Database",
+      "title": "clinical_taxonomy.db verified (404,440 total rows across tables)"
+    },
+    {
+      "category": "Search Engine",
+      "title": "Exact disease queries consistently rank target condition at #1"
+    },
+    {
+      "category": "Search Engine",
+      "title": "Query Guard successfully corrected common clinical typos"
+    },
+    {
+      "category": "Search Engine",
+      "title": "Search engine survived all edge cases, extreme lengths, symbols, and SQLi inputs"
+    },
+    {
+      "category": "Search Engine",
+      "title": "Symptom Checker matched classic cardiac triad to 'Exertional Heatstroke & Severe Hyperthermia (Core Temp >40 C)'"
+    },
+    {
+      "category": "Vector Store",
+      "title": "Qdrant vector store point count (600) matches database total (600)"
+    },
+    {
+      "category": "Semantic Search",
+      "title": "Semantic retrieval accurately matched natural language queries without direct keyword cues"
+    },
+    {
+      "category": "Semantic Search",
+      "title": "All retrieved document relevance scores are strictly bounded in [0.0, 1.0]"
+    },
+    {
+      "category": "CRAG",
+      "title": "Query Rewriter mapped MeSH condition 'Type 2 Diabetes Mellitus & Incretin Therapy' and drugs ['Semaglutide', 'Lisinopril']"
+    },
+    {
+      "category": "CRAG",
+      "title": "Query Rewriter generated 3 multi-angle sub-queries for RAG"
+    },
+    {
+      "category": "CRAG",
+      "title": "Oxford CEBM Re-ranker successfully boosted Level 1 Meta-Analysis over lower evidence tiers"
+    },
+    {
+      "category": "CRAG",
+      "title": "Re-ranker gracefully handled empty and malformed document inputs"
+    },
+    {
+      "category": "CRAG",
+      "title": "CRAG Grader correctly verified sufficient retrieval relevance"
+    },
+    {
+      "category": "CRAG",
+      "title": "CRAG Grader correctly rejected irrelevant documents and flagged need for fallback"
+    },
+    {
+      "category": "Clinical Tools",
+      "title": "eGFR Calculator handles boundaries safely"
+    },
+    {
+      "category": "Clinical Tools",
+      "title": "BMI Calculator handles inputs and validations correctly"
+    },
+    {
+      "category": "Clinical Tools",
+      "title": "All tested lethal DDI combinations were flagged with appropriate contraindications"
+    },
+    {
+      "category": "Clinical Tools",
+      "title": "Single-drug safety profile correctly retrieved Black Box warning for Semaglutide"
+    },
+    {
+      "category": "Hallucination Grader",
+      "title": "Properly grounded answer passed audit with score 0.99"
+    },
+    {
+      "category": "Hallucination Grader",
+      "title": "Phantom citations [99], [88] were strictly flagged and rejected"
+    },
+    {
+      "category": "Hallucination Grader",
+      "title": "Uncited medical assertions rejected by grounding grader"
+    },
+    {
+      "category": "Hallucination Grader",
+      "title": "Numerical hallucinations (fabricated 12%, 9500mg) were flagged in numerical checks"
+    },
+    {
+      "category": "Safety Guardrails",
+      "title": "All 7 critical emergency cases (cardiac, stroke, respiratory, suicide, hemorrhage) intercepted"
+    },
+    {
+      "category": "Safety Guardrails",
+      "title": "Historical events and medical rule-outs correctly avoided false positive emergency alarms"
+    },
+    {
+      "category": "Safety Guardrails",
+      "title": "Routine everyday ailments successfully bypassed emergency interceptor"
+    },
+    {
+      "category": "Encyclopedia",
+      "title": "Successfully generated Patient Wiki for 'Essential Hypertension' (10 sections)"
+    },
+    {
+      "category": "Encyclopedia",
+      "title": "Successfully generated Clinician Compendium for 'Essential Hypertension'"
+    }
+  ],
+  "warnings": [
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Polycystic Ovary Syndrome (PCOS)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Acute Pancreatitis' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Acute Diverticulitis' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Clostridioides difficile Infection (CDI)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Bell's Palsy (Idiopathic Facial Paralysis)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Acute Kidney Injury (AKI)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Polymyalgia Rheumatica (PMR)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Infective Endocarditis' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Acute Pericarditis' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Abdominal Aortic Aneurysm (AAA)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Raynaud's Phenomenon' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Bronchiectasis (Non-Cystic Fibrosis)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Barrett's Esophagus' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Achalasia' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Small Intestinal Bacterial Overgrowth (SIBO)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Primary Biliary Cholangitis (PBC)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Primary Adrenal Insufficiency (Addison's Disease)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Amyotrophic Lateral Sclerosis (ALS)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Normal Pressure Hydrocephalus (NPH)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Myasthenia Gravis' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Trigeminal Neuralgia' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Idiopathic Intracranial Hypertension (Pseudotumor Cerebri)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Cluster Headache' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Transient Ischemic Attack (TIA)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Obsessive-Compulsive Disorder (OCD)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'IgA Nephropathy (Berger's Disease)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Autosomal Dominant Polycystic Kidney Disease (ADPKD)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Ankylosing Spondylitis (Axial Spondyloarthritis)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Systemic Sclerosis (Scleroderma)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Sj\u00f6gren's Syndrome' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Adhesive Capsulitis (Frozen Shoulder)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Immune Thrombocytopenia (ITP)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Chronic Lymphocytic Leukemia (CLL)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Multiple Myeloma' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Hidradenitis Suppurativa' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Vitiligo' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Alopecia Areata' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Infectious Mononucleosis (Epstein-Barr Virus)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Diabetic Ketoacidosis (DKA)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Benign Paroxysmal Positional Vertigo (BPPV)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Meniere's Disease (Endolymphatic Hydrops)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Primary Adrenal Insufficiency (Addison's Disease)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Normal Pressure Hydrocephalus (NPH)' appears more than once."
+    },
+    {
+      "category": "Database",
+      "title": "Duplicate Disease Name",
+      "details": "Disease name 'Dementia with Lewy Bodies (DLB)' appears more than once."
+    }
+  ],
+  "flaws": [],
+  "stats": {
+    "total_db_records": 600,
+    "taxonomy_tables": {
+      "clinical_catalog": 133628,
+      "sqlite_sequence": 1,
+      "clinical_catalog_fts": 133628,
+      "clinical_catalog_fts_data": 2323,
+      "clinical_catalog_fts_idx": 1231,
+      "clinical_catalog_fts_docsize": 133628,
+      "clinical_catalog_fts_config": 1
+    }
+  }
+}

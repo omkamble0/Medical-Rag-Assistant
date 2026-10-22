@@ -517,3 +517,23 @@ class QueryGuard:
             "confidence": 1.0,
             "corrections": []
         }
+
+
+# Singleton instance and convenience wrappers
+query_guard = QueryGuard()
+
+
+def validate_clinical_query(q: str) -> Dict[str, Any]:
+    res = query_guard.validate(q)
+    return {
+        "is_valid": True,
+        "has_typos": res["needs_correction"],
+        "corrected_query": res["corrected"],
+        "corrections": res["corrections"]
+    }
+
+
+def correct_medical_typos(q: str) -> Tuple[str, bool]:
+    res = query_guard.correct_query(q)
+    return res["corrected"], res["has_corrections"]
+

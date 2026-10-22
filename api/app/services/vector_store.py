@@ -179,8 +179,8 @@ SEED_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "year": 2014,
         "doi_or_pmid": "10.1056/NEJMoa1409077",
         "evidence_level": EvidenceLevel.LEVEL_1,
-        "keywords": ["heart failure", "cardiac failure", "chf", "hfref", "ejection fraction", "sacubitril", "valsartan", "entresto", "breathlessness", "shortness of breath", "edema", "swollen ankles", "bnp", "cardiomyopathy"],
-        "snippet": "In 8,442 patients with HFrEF (EF ≤40%), sacubitril/valsartan (Entresto) significantly reduced the primary endpoint of CV death or HF hospitalization vs enalapril (HR 0.80; 95% CI 0.73–0.87; P<0.001). All-cause mortality was reduced by 16% (HR 0.84). The trial was stopped early due to overwhelming benefit.",
+        "keywords": ["heart failure", "cardiac failure", "chf", "hfref", "ejection fraction", "sacubitril", "valsartan", "entresto", "breathlessness", "shortness of breath", "edema", "swollen ankles", "bnp", "cardiomyopathy", "orthopnea", "paroxysmal nocturnal dyspnea", "pnd", "lying flat", "trouble breathing lying down", "peripheral edema"],
+        "snippet": "In 8,442 patients with HFrEF (EF ≤40%), sacubitril/valsartan (Entresto) significantly reduced the primary endpoint of CV death or HF hospitalization vs enalapril (HR 0.80; 95% CI 0.73–0.87; P<0.001). Hallmark symptoms include dyspnea on exertion, orthopnea (difficulty breathing when lying flat), paroxysmal nocturnal dyspnea, and bilateral lower extremity peripheral edema (swollen ankles). All-cause mortality was reduced by 16% (HR 0.84).",
         "key_takeaway": "Sacubitril/valsartan reduces cardiovascular death or heart failure hospitalization by 20% vs ACE inhibitor alone."
     },
     {
@@ -295,9 +295,9 @@ MEDICAL_SYNONYM_MAP: Dict[str, List[str]] = {
     "panic": ["panic disorder", "agoraphobia", "panic attack", "cbt", "ssri", "sertraline", "escitalopram", "cochrane", "bighelli"],
     "anxiety": ["panic", "gad", "generalized anxiety", "ssri", "snri", "sertraline", "escitalopram", "cbt", "cognitive behavioral therapy"],
     "depression": ["mdd", "antidepressant", "ssri", "sertraline", "escitalopram", "cbt", "phq-9"],
-    "treatment": ["therapy", "medication", "first-line", "guideline", "protocol", "intervention", "evidence-based"],
-    "treatments": ["therapies", "medications", "first-line", "guidelines", "protocols", "interventions", "evidence-based"],
-    "evidence": ["trials", "rct", "meta-analysis", "systematic review", "cebm", "cochrane", "lancet", "nejm", "jama", "clinical guidelines"],
+    "treatment": ["therapy", "medication"],
+    "treatments": ["therapies", "medications"],
+    "evidence": ["guidelines", "trials"],
     "stroke": ["ischemic stroke", "tia", "thrombolysis", "thrombectomy", "alteplase", "tenecteplase", "aspirin"],
     "dvt": ["deep vein thrombosis", "pulmonary embolism", "pe", "doac", "apixaban", "rivaroxaban"],
     "pe": ["pulmonary embolism", "dvt", "venous thromboembolism", "vte"],
@@ -554,6 +554,43 @@ def get_corpus_stats() -> Dict[str, Any]:
     }
 
 
+def normalize_domain_cluster(domain: Optional[str]) -> str:
+    if not domain:
+        return "GENERAL_MEDICINE"
+    d = str(domain).upper().replace(" ", "_")
+    if "CARDIO" in d:
+        return "CARDIOVASCULAR"
+    if "PULM" in d or "RESPIR" in d:
+        return "PULMONOLOGY"
+    if "GASTRO" in d or "HEPAT" in d:
+        return "GASTROENTEROLOGY"
+    if "NEPH" in d or "RENAL" in d:
+        return "NEPHROLOGY"
+    if "PSYCH" in d:
+        return "PSYCHIATRY"
+    if "NEURO" in d:
+        return "NEUROLOGY"
+    if "ENDO" in d or "DIABET" in d or "METAB" in d:
+        return "ENDOCRINOLOGY_METABOLISM"
+    if "RHEUM" in d or "ARTH" in d:
+        return "RHEUMATOLOGY"
+    if "INFECT" in d or "VIRO" in d:
+        return "INFECTIOUS_DISEASE"
+    if "DERM" in d:
+        return "DERMATOLOGY"
+    if "ONCO" in d or "HEME" in d or "HEMATO" in d:
+        return "HEMATOLOGY_ONCOLOGY"
+    if "PEDIATR" in d:
+        return "PEDIATRICS"
+    if "WOMEN" in d or "GYNEC" in d or "OBSTET" in d:
+        return "WOMENS_HEALTH"
+    if "EMERG" in d or "TOXIC" in d:
+        return "EMERGENCY_MEDICINE"
+    if "OPHTHAL" in d:
+        return "OPHTHALMOLOGY"
+    return d
+
+
 def retrieve_clinical_evidence(
     query: str,
     top_k: int = 3,
@@ -569,22 +606,36 @@ def retrieve_clinical_evidence(
     if not clean_query:
         return []
 
-    # Step 1 & 2: Layperson-to-Clinical Translation & Augmented Hybrid Query
+
+    # Step 1 & 2: Clinical NLP Processing (Negation Detection, Acronym Expansion, Intent)
+    negated_tokens = set()
+    try:
+        from app.services.clinical_nlp import clinical_nlp
+        nlp_res = clinical_nlp.process(clean_query)
+        negated_tokens = set(nlp_res.negated_symptoms)
+        # Use asserted clean query for search
+        nlp_augmented = nlp_res.augmented_clinical_query
+    except Exception:
+        nlp_augmented = clean_query
+
+    # Step 3: Layperson-to-Clinical Translation & Augmented Hybrid Query
     try:
         from app.core.query_parser import expand_layperson_query
         exp = expand_layperson_query(clean_query)
-        augmented_query = exp.augmented_query or clean_query
+        augmented_query = f"{nlp_augmented} {exp.augmented_query or ''}".strip()
         clinical_synonyms = exp.clinical_synonyms
     except Exception:
-        augmented_query = clean_query
+        augmented_query = nlp_augmented
         clinical_synonyms = []
 
     query_tokens = _tokenize(augmented_query)
     for syn in clinical_synonyms:
         query_tokens.extend(_tokenize(syn))
     expanded_tokens = _expand_query_tokens(query_tokens)
-    content_tokens = [t for t in expanded_tokens if t not in STOP_WORDS]
-    bm25_tokens = content_tokens if content_tokens else expanded_tokens
+    
+    # Strictly filter out negated clinical terms so negated symptoms never trigger retrievals
+    content_tokens = [t for t in expanded_tokens if t not in STOP_WORDS and t not in negated_tokens]
+    bm25_tokens = content_tokens if content_tokens else [t for t in expanded_tokens if t not in negated_tokens]
 
     # 1. Sparse BM25 Ranking (only positive score docs receive a rank)
     bm25_ranked = _BM25_INDEX.score(bm25_tokens)
@@ -596,6 +647,19 @@ def retrieve_clinical_evidence(
     positive_dense = [item for item in dense_ranked if item[1] > 0.01]
     dense_ranks: Dict[int, int] = {doc_id: rank for rank, (doc_id, score) in enumerate(positive_dense, start=1)}
 
+
+    generic_symptom_stopwords = {
+        "pain", "ache", "swelling", "fatigue", "tired", "weakness", "fever",
+        "discomfort", "chronic", "acute", "severe", "mild", "moderate", "symptom",
+        "disease", "condition", "disorder", "disorders", "management", "treatment", "guidelines",
+        "clinical", "evaluation", "evidence", "series", "study", "trial", "trials", "review",
+        "consensus", "statement", "recommendations", "protocol", "care", "findings",
+        "practice", "guideline", "patient", "adult", "adults", "pediatric",
+        "first", "line", "first-line", "meta-analysis", "systematic", "comparative", "efficacy",
+        "monotherapy", "monotherapies", "pharmacotherapy", "intervention", "interventions",
+        "therapies", "therapy", "medication", "medications", "best", "evidence-based"
+    }
+    query_specific_tokens = set(bm25_tokens) - generic_symptom_stopwords
 
     # 3. Reciprocal Rank Fusion (RRF) with Oxford CEBM Hierarchy Multiplier
     # Formula: Score(d) = CEBM_Multiplier(d) * [ (1/(k + rank_sparse) if match) + (1/(k + rank_dense) if match) ]
@@ -623,32 +687,70 @@ def retrieve_clinical_evidence(
         cebm_mult = CEBM_WEIGHTS.get(doc.get("evidence_level"), 1.0)
         final_score = rrf_total * cebm_mult
 
+        # Active Negation Suppression: if doc's title heavily contains negated concepts, penalize heavily
+        if negated_tokens:
+            doc_title_tokens = set(_tokenize(doc.get("title", "")))
+            if len(doc_title_tokens.intersection(negated_tokens)) >= 2:
+                final_score *= 0.10  # Suppress false match
+
+        # Explicit Condition Title Boost: heavily prioritize documents whose titles match specific query entities
+        if query_specific_tokens:
+            doc_title_lower = doc.get("title", "").lower()
+            specific_hits = sum(1 for w in query_specific_tokens if len(w) >= 3 and w in doc_title_lower)
+            if specific_hits >= 1:
+                final_score *= (1.0 + (specific_hits * 0.50))
+
         if final_score >= relevance_threshold:
             fused_scores.append((doc_id, final_score, doc))
 
+    fused_scores.sort(key=lambda x: x[1], reverse=True)
     # Apply False-Twin Polarity Disambiguation (Demote opposite twins, boost direct matches)
     try:
         from app.core.polarity_disambiguator import adjust_document_scores_for_polarity
         fused_scores = adjust_document_scores_for_polarity(clean_query, fused_scores)
     except Exception:
-        fused_scores.sort(key=lambda x: x[1], reverse=True)
+        pass
+    fused_scores.sort(key=lambda x: x[1], reverse=True)
 
     if not fused_scores:
         return []  # No hallucinated/unrelated fallbacks
 
-
-    # 4. Strict Domain Cluster Isolation (Eliminate Context Bleed)
-    primary_domain = fused_scores[0][2].get("domain")
+    # 4. Strict Domain Cluster Isolation (Eliminate Context Bleed with Cardiopulmonary / Cross-Organ Tolerance)
+    primary_domain = normalize_domain_cluster(fused_scores[0][2].get("domain"))
     isolated_candidates: List[Tuple[int, float, Dict[str, Any]]] = []
 
+    COMPATIBLE_DOMAINS = {
+        "CARDIOVASCULAR": {"CARDIOVASCULAR", "RESPIRATORY", "ENDOCRINOLOGY_METABOLISM"},
+        "RESPIRATORY": {"RESPIRATORY", "CARDIOVASCULAR", "INFECTIOUS_DISEASE"},
+        "ENDOCRINOLOGY_METABOLISM": {"ENDOCRINOLOGY_METABOLISM", "CARDIOVASCULAR", "NEPHROLOGY"},
+        "NEUROLOGY": {"NEUROLOGY", "PSYCHIATRY"},
+    }
+    allowed_domains = COMPATIBLE_DOMAINS.get(primary_domain, {primary_domain})
+
     for doc_id, score, doc in fused_scores:
-        doc_domain = doc.get("domain")
+        doc_domain = normalize_domain_cluster(doc.get("domain"))
         if doc_domain == primary_domain:
             isolated_candidates.append((doc_id, score, doc))
+        elif doc_domain in allowed_domains and score >= (fused_scores[0][1] * 0.70):
+            isolated_candidates.append((doc_id, score, doc))
         else:
-            # Only allow cross-domain if query explicitly tokens multiple specialties
-            if score >= (fused_scores[0][1] * 0.85):
+            # Cross-domain documents admitted if query has specific condition tokens matching document
+            doc_kw_list = [str(k).lower() for k in doc.get("keywords", [])]
+            doc_keywords = set(_tokenize(f"{doc.get('title', '')} {' '.join(doc_kw_list)} {doc.get('domain', '')}")) - generic_symptom_stopwords
+            specific_overlap = query_specific_tokens.intersection(doc_keywords)
+            if len(specific_overlap) >= 1 and score >= (fused_scores[0][1] * 0.65):
                 isolated_candidates.append((doc_id, score, doc))
+
+    if not isolated_candidates or len(isolated_candidates) < top_k:
+        # Fill remaining slots with next highest same-domain or overall candidates
+        for item in fused_scores:
+            if item not in isolated_candidates:
+                isolated_candidates.append(item)
+            if len(isolated_candidates) >= top_k:
+                break
+
+
+
 
     selected = isolated_candidates[:top_k]
 

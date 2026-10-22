@@ -60,6 +60,11 @@ class ParsedQueryAnalysis(BaseModel):
         default_factory=list,
         description="Guided prompt options to disambiguate the clinical situation"
     )
+    nlp_analysis: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Deep clinical NLP analysis (NegEx asserted/negated findings, intent, acuity, morphological roots, expanded acronyms)"
+    )
+
 
 
 # --- Comprehensive Layperson-to-Clinical Medical Lexicon & Ontology ---
@@ -203,6 +208,18 @@ LAYPERSON_CLINICAL_MAP: List[Dict[str, Any]] = [
         "clinical_synonyms": ["Essential Hypertension", "Stage 1 / Stage 2 Arterial Hypertension", "Amlodipine / Lisinopril / ARB", "DASH Diet & Sodium Restriction"],
         "is_common_ailment": False,
         "primary_label": "Essential Hypertension"
+    },
+    {
+        "patterns": [r"\b(anxiety|anxious|panic|panic attack|panic disorder|gad|constant worry|nervousness)\b"],
+        "clinical_synonyms": ["Generalized Anxiety Disorder (GAD)", "Panic Disorder", "SSRI / SNRI Pharmacotherapy", "Cognitive Behavioral Therapy (CBT)"],
+        "is_common_ailment": False,
+        "primary_label": "Generalized Anxiety Disorder / Panic Disorder"
+    },
+    {
+        "patterns": [r"\b(heart failure|chf|congestive heart failure|swollen ankles.*breath|trouble breathing.*lying|breath.*lying down|breath.*lying flat|cannot lie flat|waking up gasping|orthopnea|peripheral edema|paroxysmal nocturnal dyspnea)\b"],
+        "clinical_synonyms": ["Congestive Heart Failure (CHF)", "Heart Failure with Reduced Ejection Fraction (HFrEF)", "Orthopnea & Paroxysmal Nocturnal Dyspnea", "Peripheral Edema & Volume Overload", "Sacubitril/Valsartan (Entresto)", "Loop Diuretics"],
+        "is_common_ailment": False,
+        "primary_label": "Heart Failure (HFrEF)"
     },
     {
         "patterns": [r"\b(wheezing|asthma attack|short of breath|trouble breathing|winded|inhaler)\b"],
@@ -707,10 +724,28 @@ def parse_clinical_query(query: str) -> ParsedQueryAnalysis:
     """
     Main entry point for Stage 1 Inbound Analysis.
     Deconstructs the raw query, maps layperson terminology to scientific clinical standards,
-    extracts entities, and detects missing clinical parameters.
+    extracts entities, runs NegEx negation / acronym expansion, and detects missing clinical parameters.
     """
     expanded_query = expand_layperson_query(query)
     entities = extract_clinical_entities(query)
+
+    # Invoke Clinical NLP Engine for deep negation, intent, and morphology analysis
+    nlp_dict = None
+    try:
+        from app.services.clinical_nlp import clinical_nlp
+        nlp_res = clinical_nlp.process(query)
+        nlp_dict = nlp_res.model_dump()
+        
+        # Merge extracted medications and metrics if not already present
+        for med in nlp_res.medications_and_doses:
+            med_str = f"{med['drug']} ({med['regimen']})"
+            if med_str not in entities.interventions:
+                entities.interventions.append(med_str)
+        for met_k, met_v in nlp_res.clinical_metrics.items():
+            if met_k not in entities.clinical_metrics:
+                entities.clinical_metrics[met_k] = met_v
+    except Exception as e:
+        pass
     
     # If primary condition was not matched by strict patterns, derive from clinical synonyms
     if not entities.primary_condition and expanded_query.clinical_synonyms:
@@ -728,5 +763,7 @@ def parse_clinical_query(query: str) -> ParsedQueryAnalysis:
         context_gaps=context_gaps,
         requires_disambiguation=requires_disambiguation,
         recommended_clarifications=clarifications,
+        nlp_analysis=nlp_dict,
     )
+
 

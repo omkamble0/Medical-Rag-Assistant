@@ -209,6 +209,7 @@ export interface SelfRAGGroundingResult {
   }>;
   unsupported_claims: string[];
   audit_summary: string;
+  corrections_applied?: string[];
 }
 
 export interface ToolResults {
@@ -392,5 +393,76 @@ export interface ChatResponse {
   confidence?: ConfidenceMetrics;
   latency_ms: number;
 }
+
+// ============================================================
+// Medical Encyclopedia & Clinical Compendium (WikiMed) Types
+// ============================================================
+
+export interface WikiSection {
+  id: string;
+  title: string;
+  icon: string;
+  content: string;
+  summary_bullet?: string | null;
+  callout_alert?: string | null;
+}
+
+export interface EncyclopediaTopicSummary {
+  id: string;
+  name: string;
+  icd10_code: string;
+  specialty: string;
+  organ_system: string;
+  severity: string;
+  cebm_level: string;
+  short_summary: string;
+  hallmark_symptoms: string[];
+  has_emergency_red_flags: boolean;
+}
+
+export interface EncyclopediaArticle {
+  id: string;
+  title: string;
+  alternative_names: string[];
+  icd10_code: string;
+  specialty: string;
+  organ_system: string;
+  severity_tier: string;
+  cebm_level: string;
+  mode: "patient" | "clinician";
+  layperson_summary: string;
+  clinical_summary: string;
+  plain_analogy: string;
+  grounding_score: number;
+  sections: WikiSection[];
+  source_authorities: string[];
+  landmark_citations: Array<{
+    citation_index: number;
+    title: string;
+    journal: string;
+    year: number;
+    cebm_level: string;
+    doi_or_pmid?: string | null;
+    takeaway: string;
+  }>;
+  related_topics: Array<{
+    id: string;
+    name: string;
+    specialty: string;
+    icd10: string;
+  }>;
+  jargon_glossary: Array<{
+    term: string;
+    plain_english: string;
+  }>;
+  emergency_red_flags: string[];
+  doctor_checklist?: {
+    parameter?: string;
+    safety?: string;
+    action?: string;
+  } | null;
+  last_reviewed: string;
+}
+
 
 

@@ -43,6 +43,13 @@ from scripts.dataset_parts.part18_adv_gi_twins import PART_18_DISEASES
 from scripts.dataset_parts.part19_adv_neph_twins import PART_19_DISEASES
 from scripts.dataset_parts.part20_adv_oncheme_twins import PART_20_DISEASES
 
+# Parts 21 to 22 (501 to 550)
+from scripts.dataset_parts.part21_emergency_toxicology_metabolic import PART_21_DISEASES
+from scripts.dataset_parts.part22_pediatric_rare_neuro_genetics import PART_22_DISEASES
+
+# Part 23 (551 to 600: Everyday Symptoms, Common Minor Injuries, Ambulatory Day-to-Day Conditions)
+from scripts.dataset_parts.part23_everyday_symptoms_and_minor_injuries import PART_23_DISEASES
+
 PARTS_1_TO_5 = [
     PART_1_DISEASES,
     PART_2_DISEASES,
@@ -75,6 +82,11 @@ PARTS_16_TO_20 = [
     PART_20_DISEASES,
 ]
 
+PARTS_21_TO_22 = [
+    PART_21_DISEASES,
+    PART_22_DISEASES,
+]
+
 NEW_100_DISEASES: List[Dict[str, Any]] = []
 for p in PARTS_1_TO_5:
     NEW_100_DISEASES.extend(p)
@@ -91,11 +103,19 @@ NEW_401_TO_500_DISEASES: List[Dict[str, Any]] = []
 for p in PARTS_16_TO_20:
     NEW_401_TO_500_DISEASES.extend(p)
 
+NEW_501_TO_550_DISEASES: List[Dict[str, Any]] = []
+for p in PARTS_21_TO_22:
+    NEW_501_TO_550_DISEASES.extend(p)
+
+NEW_551_TO_600_DISEASES: List[Dict[str, Any]] = list(PART_23_DISEASES)
+
 ALL_NEW_DISEASES: List[Dict[str, Any]] = (
     NEW_100_DISEASES +
     NEW_200_TO_300_DISEASES +
     NEW_301_TO_400_DISEASES +
-    NEW_401_TO_500_DISEASES
+    NEW_401_TO_500_DISEASES +
+    NEW_501_TO_550_DISEASES +
+    NEW_551_TO_600_DISEASES
 )
 
 NEW_ICD10_MAP: Dict[str, str] = {
@@ -107,7 +127,9 @@ def validate():
     assert len(NEW_200_TO_300_DISEASES) == 100, f"Expected 100 diseases (201-300), got {len(NEW_200_TO_300_DISEASES)}"
     assert len(NEW_301_TO_400_DISEASES) == 100, f"Expected 100 diseases (301-400), got {len(NEW_301_TO_400_DISEASES)}"
     assert len(NEW_401_TO_500_DISEASES) == 100, f"Expected 100 diseases (401-500), got {len(NEW_401_TO_500_DISEASES)}"
-    assert len(ALL_NEW_DISEASES) == 400, f"Expected 400 total new diseases (101-500), got {len(ALL_NEW_DISEASES)}"
+    assert len(NEW_501_TO_550_DISEASES) == 50, f"Expected 50 diseases (501-550), got {len(NEW_501_TO_550_DISEASES)}"
+    assert len(NEW_551_TO_600_DISEASES) == 50, f"Expected 50 diseases (551-600), got {len(NEW_551_TO_600_DISEASES)}"
+    assert len(ALL_NEW_DISEASES) == 500, f"Expected 500 total new diseases (101-600), got {len(ALL_NEW_DISEASES)}"
 
     required_keys = [
         "id", "icd10", "condition", "specialty", "organ_system",
@@ -129,7 +151,7 @@ def validate():
             assert dk in d["doctor_consultation_checklist"] and d["doctor_consultation_checklist"][dk], f"Missing '{dk}' in {d['id']}"
         assert isinstance(d["red_flags"], list) and len(d["red_flags"]) > 0, f"Invalid red_flags in {d['id']}"
 
-    print(f"[OK] Validation passed: exactly 400 new diseases (DOC-CARD-101 to DOC-CARD-500) verified.")
+    print(f"[OK] Validation passed: exactly 500 new diseases (DOC-CARD-101 to DOC-CARD-600) verified.")
 
 if __name__ == "__main__":
     validate()

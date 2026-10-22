@@ -22,6 +22,7 @@ from app.core.prompts import (
 from app.core.guardrails import evaluate_safety_guardrails
 from app.services.medical_db import medical_db
 from app.services.llm_gateway import llm_gateway
+from app.services.crag.hallucination_grader import avoid_hallucinations
 
 logger = logging.getLogger(__name__)
 
@@ -247,7 +248,44 @@ class MedicalChatEngine:
         if MANDATORY_DISCLAIMER not in raw_answer:
             raw_answer += f"\n\n---\n{MANDATORY_DISCLAIMER}"
 
-        # 7. Extract Inline Citations
+        # 7. Self-RAG Hallucination Audit & Grounding Verification
+        raw_source_dicts = [
+            {
+                "id": s.id,
+                "citation_index": s.citation_index,
+                "title": s.title,
+                "journal": s.journal,
+                "year": s.year,
+                "content": s.snippet,
+                "snippet": s.snippet,
+                "evidence_level": s.evidence_level.value if hasattr(s.evidence_level, "value") else str(s.evidence_level),
+                "key_takeaway": s.key_takeaway
+            }
+            for s in sources
+        ]
+        local_fallback = self._synthesize_local_chat_response(
+            user_text=user_text,
+            audience=audience,
+            matched_disease=matched_disease,
+            active_condition=active_condition,
+            history=merged_history
+        )
+        raw_answer, grounding_audit = avoid_hallucinations(
+            raw_answer,
+            raw_source_dicts,
+            deterministic_fallback=local_fallback
+        )
+
+        # Ensure advisory banner is preserved even if fallback was substituted
+        if triage_alert and not raw_answer.startswith("> ⚠️"):
+            advisory_box = (
+                f"> ⚠️ **{triage_alert.headline}**\n"
+                f"> {triage_alert.critical_guidance}\n"
+                f"> *Red-flag indicators requiring prompt medical evaluation:* {', '.join(triage_alert.red_flag_symptoms[:3])}\n\n"
+            )
+            raw_answer = advisory_box + raw_answer
+
+        # 8. Extract Inline Citations
         citations = []
         for i in range(1, len(sources) + 1):
             if f"[{i}]" in raw_answer:
@@ -295,12 +333,12 @@ class MedicalChatEngine:
             sources=sources,
             suggested_followups=suggested_followups,
             confidence=ConfidenceMetrics(
-                overall_score=0.94 if sources else 0.88,
-                status=ConfidenceStatus.HIGH if sources else ConfidenceStatus.MODERATE,
+                overall_score=round(grounding_audit.grounding_score, 2),
+                status=ConfidenceStatus.HIGH if grounding_audit.is_grounded else ConfidenceStatus.MODERATE,
                 retrieval_relevance=0.92 if sources else 0.85,
-                grounding_ratio=0.95 if citations else 0.88,
+                grounding_ratio=round(grounding_audit.grounding_score, 2),
                 evidence_freshness=0.96,
-                explanation="Multi-turn conversation verified against clinical guidelines and Oxford CEBM evidence."
+                explanation=grounding_audit.audit_summary
             ),
             latency_ms=latency_ms
         )

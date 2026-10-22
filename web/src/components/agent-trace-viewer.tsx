@@ -130,6 +130,23 @@ export function AgentTraceViewer({
             </div>
           </div>
 
+          {/* Active Hallucination Guard Banner if corrections applied */}
+          {groundingAudit?.corrections_applied && groundingAudit.corrections_applied.length > 0 && (
+            <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-200 text-xs flex items-start gap-2.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-emerald-300">
+                  Self-RAG Grounding Guard Enforced:
+                </p>
+                <ul className="mt-1 space-y-0.5 text-emerald-200/90 list-disc list-inside">
+                  {groundingAudit.corrections_applied.map((corr, cIdx) => (
+                    <li key={cIdx}>{corr}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
           {/* DDI Alert Banner if interactions detected */}
           {toolResults?.drug_interactions && toolResults.drug_interactions.interactions_found > 0 && (
             <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-200 text-xs flex items-start gap-3">

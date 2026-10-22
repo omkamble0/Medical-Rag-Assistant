@@ -1005,4 +1005,113 @@ export async function clearChatHistory(conversationId: string): Promise<void> {
   });
 }
 
+// ============================================================
+// Medical Encyclopedia & Clinical Compendium (WikiMed) API
+// ============================================================
+
+export async function fetchEncyclopediaTopics(params?: {
+  specialty?: string;
+  query?: string;
+  limit?: number;
+}): Promise<import("./types").EncyclopediaTopicSummary[]> {
+  const queryParams = new URLSearchParams();
+  if (params?.specialty) queryParams.set("specialty", params.specialty);
+  if (params?.query) queryParams.set("query", params.query);
+  if (params?.limit) queryParams.set("limit", String(params.limit));
+
+  const res = await fetch(`${API_BASE_URL}/encyclopedia/topics?${queryParams.toString()}`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch encyclopedia topics (${res.status})`);
+  }
+  return await res.json();
+}
+
+export async function fetchEncyclopediaArticle(
+  topicIdOrName: string,
+  mode: "patient" | "clinician" = "patient"
+): Promise<import("./types").EncyclopediaArticle> {
+  const res = await fetch(
+    `${API_BASE_URL}/encyclopedia/article/${encodeURIComponent(topicIdOrName)}?mode=${mode}`
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to fetch encyclopedia article (${res.status})`);
+  }
+  return await res.json();
+}
+
+export async function fetchEncyclopediaSpecialties(): Promise<string[]> {
+  const res = await fetch(`${API_BASE_URL}/encyclopedia/specialties`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch encyclopedia specialties (${res.status})`);
+  }
+  return await res.json();
+}
+
+export async function fetchRandomEncyclopediaTopic(
+  mode: "patient" | "clinician" = "patient"
+): Promise<import("./types").EncyclopediaArticle> {
+  const res = await fetch(`${API_BASE_URL}/encyclopedia/random?mode=${mode}`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch random encyclopedia article (${res.status})`);
+  }
+  return await res.json();
+}
+
+// ============================================================
+// CMS ICD-10 & WHO ICD-11 Master Taxonomy API (133,000+ Conditions)
+// ============================================================
+
+export interface TaxonomyEntity {
+  id: number;
+  source: "CMS_ICD10" | "WHO_ICD11";
+  code: string;
+  raw_code?: string;
+  title: string;
+  short_desc?: string;
+  category: string;
+  chapter?: string;
+  is_billable: boolean;
+  foundation_uri?: string;
+  has_curated_monograph: boolean;
+}
+
+export interface TaxonomySearchResponse {
+  total_matches: number;
+  query: string;
+  results: TaxonomyEntity[];
+  latency_ms: number;
+}
+
+export async function searchClinicalTaxonomy(
+  query: string,
+  source?: "CMS_ICD10" | "WHO_ICD11",
+  limit: number = 20
+): Promise<TaxonomySearchResponse> {
+  const params = new URLSearchParams();
+  params.set("query", query);
+  if (source) params.set("source", source);
+  params.set("limit", String(limit));
+
+  const res = await fetch(`${API_BASE_URL}/taxonomy/search?${params.toString()}`);
+  if (!res.ok) {
+    throw new Error(`Failed to search clinical taxonomy (${res.status})`);
+  }
+  return await res.json();
+}
+
+export async function fetchTaxonomyStats(): Promise<{
+  total_conditions: number;
+  cms_icd10_count: number;
+  who_icd11_count: number;
+  linked_rich_monographs: number;
+  status: string;
+}> {
+  const res = await fetch(`${API_BASE_URL}/taxonomy/stats`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch taxonomy stats (${res.status})`);
+  }
+  return await res.json();
+}
+
+
 

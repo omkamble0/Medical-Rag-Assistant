@@ -48,8 +48,20 @@ def rerank_evidence_documents(
         match_count = sum(full_text.count(t) for t in q_tokens)
         title_matches = sum(title.count(t) for t in q_tokens)
 
+        # Morphological root matches for clinical terms (e.g. hypertension <-> antihypertensive)
+        for t in q_tokens:
+            if len(t) >= 5:
+                stem = t[:6]
+                if stem in full_text and t not in full_text:
+                    match_count += 1.0
+                if stem in title and t not in title:
+                    title_matches += 2.0
+
         # Base lexical score
         lexical_score = (match_count * 1.0) + (title_matches * 2.5)
+
+        # Incorporate incoming vector similarity if available
+        prior_score = float(doc.get("score") or doc.get("relevance_score") or 0.0)
 
         # 2. Reciprocal Rank initial boost
         rrf_initial = 1.0 / (60 + idx)
@@ -59,7 +71,7 @@ def rerank_evidence_documents(
         cebm_mult = _get_cebm_multiplier(ev_level)
 
         # Composite score
-        total_score = (lexical_score + (rrf_initial * 10.0)) * cebm_mult
+        total_score = (lexical_score + (prior_score * 2.0) + (rrf_initial * 10.0)) * cebm_mult
 
         scored_docs.append({
             **doc,

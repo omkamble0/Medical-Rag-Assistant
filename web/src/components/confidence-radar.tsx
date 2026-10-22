@@ -103,8 +103,8 @@ export function ConfidenceRadar({ metrics }: ConfidenceRadarProps) {
         <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
             <span className="flex items-center gap-1.5 font-medium">
-              <Activity className="w-3.5 h-3.5 text-teal-600" />
-              Claim Density
+              <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+              Self-RAG Grounding
             </span>
             <span className="font-bold text-slate-800">
               {Math.round(metrics.grounding_ratio * 100)}%

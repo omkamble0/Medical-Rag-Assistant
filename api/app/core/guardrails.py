@@ -14,7 +14,7 @@ EXPLICIT_EMERGENCY_TRIGGERS = [
     # Severe Airway & Respiratory Failure
     r"\b(can't breathe|cannot breathe|severe shortness of breath|suffocating|gasping for air|cyanosis|stridor|anaphylaxis|throat closing|severe allergic reaction|epipen)\b",
     # Hemorrhage & Severe Trauma
-    r"\b(severe bleeding|uncontrolled bleeding|massive hemorrhage|arterial bleed|coughing up blood|vomiting blood|gunshot|stab wound)\b",
+    r"\b(severe bleeding|uncontrolled bleeding|massive hemorrhage|arterial bleed|coughing up(\s+\w+){0,4}\s+blood|vomiting(\s+\w+){0,4}\s+blood|hemoptysis|hematemesis|gunshot|stab wound)\b",
     # Poisoning & Crisis Self-Harm
     r"\b(overdose|poisoning|swallowed bleach|suicide|suicidal|kill myself|end my life|want to die)\b"
 ]

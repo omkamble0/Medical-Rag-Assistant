@@ -10,6 +10,27 @@ from langchain_core.tools import tool
 # High-risk drug interaction matrix
 DDI_RULES: List[Dict[str, Any]] = [
     {
+        "drugs": [["nitroglycerin", "nitro", "isosorbide", "nitrate"], ["sildenafil", "viagra", "tadalafil", "cialis", "vardenafil", "pde5 inhibitor"]],
+        "severity": "CONTRAINDICATED",
+        "mechanism": "Co-administration causes synergistic potentiation of cyclic GMP-mediated vasodilation.",
+        "clinical_risk": "Severe, refractory systemic hypotension, cardiovascular collapse, and fatal myocardial infarction.",
+        "management": "Strictly contraindicated. Do not administer nitrates within 24 hours of sildenafil/vardenafil or within 48 hours of tadalafil."
+    },
+    {
+        "drugs": [["methotrexate", "mtx"], ["ibuprofen", "naproxen", "meloxicam", "aspirin", "nsaid"]],
+        "severity": "CONTRAINDICATED",
+        "mechanism": "NSAIDs decrease renal blood flow and inhibit renal tubular secretion of methotrexate.",
+        "clinical_risk": "Severe, life-threatening methotrexate toxicity including fatal myelosuppression, pancytopenia, and acute renal failure.",
+        "management": "Avoid concomitant NSAIDs with high-dose methotrexate; exercise extreme vigilance and monitor CBC/renal panels with low-dose regimens."
+    },
+    {
+        "drugs": [["spironolactone", "eplerenone", "aldactone"], ["lisinopril", "losartan", "ramipril", "valsartan", "ace inhibitor", "arb", "potassium", "klor-con"]],
+        "severity": "MAJOR",
+        "mechanism": "Synergistic inhibition of aldosterone-mediated renal potassium excretion.",
+        "clinical_risk": "Severe hyperkalemia (K+ > 6.0 mEq/L) predisposing to fatal cardiac dysrhythmias and asystole.",
+        "management": "Check baseline serum potassium and creatinine before initiation; re-check at 1, 4, and 12 weeks. Maintain dietary potassium awareness."
+    },
+    {
         "drugs": [["paxlovid", "nirmatrelvir", "ritonavir"], ["simvastatin", "lovastatin", "atorvastatin", "statin"]],
         "severity": "CONTRAINDICATED",
         "mechanism": "Ritonavir is an ultra-potent CYP3A4 inhibitor, leading to massive accumulation of statin plasma levels.",

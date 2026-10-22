@@ -108,22 +108,22 @@ export function ClinicianView({ response, activeCitation, onSelectCitation, onSe
             ),
             p: ({ children }) => {
               if (typeof children === "string") {
-                return <p className="mb-3 leading-relaxed">{renderInlineCitations(children)}</p>;
+                return <p className="mb-3.5 leading-relaxed text-slate-700 text-sm sm:text-base">{renderInlineCitations(children)}</p>;
               }
-              return <div className="mb-3 leading-relaxed">{children}</div>;
+              return <div className="mb-3.5 leading-relaxed text-slate-700 text-sm sm:text-base">{children}</div>;
             },
             ul: ({ children }) => (
-              <ul className="space-y-1.5 mb-3 list-disc list-inside text-slate-700">
+              <ul className="space-y-2.5 my-3 list-disc pl-5 text-slate-700 marker:text-teal-600">
                 {children}
               </ul>
             ),
             li: ({ children }) => (
-              <li className="leading-relaxed pl-1">
+              <li className="leading-relaxed pl-1 text-sm sm:text-base">
                 {typeof children === "string" ? renderInlineCitations(children) : children}
               </li>
             ),
             strong: ({ children }) => (
-              <strong className="font-semibold text-slate-900">
+              <strong className="font-bold text-slate-900">
                 {children}
               </strong>
             ),
@@ -133,7 +133,7 @@ export function ClinicianView({ response, activeCitation, onSelectCitation, onSe
               </em>
             ),
             code: ({ children }) => (
-              <code className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-xs font-mono">
+              <code className="px-1.5 py-0.5 rounded bg-slate-100 text-teal-800 text-xs font-mono font-semibold border border-slate-200">
                 {children}
               </code>
             )

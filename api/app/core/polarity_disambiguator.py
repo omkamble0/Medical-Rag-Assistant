@@ -213,7 +213,7 @@ def adjust_document_scores_for_polarity(
     """
     rule = detect_polarity_rule(query)
     if not rule:
-        return scored_docs
+        return sorted(scored_docs, key=lambda x: x[1], reverse=True)
 
     adjusted = []
     for doc_id, score, doc in scored_docs:

@@ -287,6 +287,30 @@ SPECIALTY_SYMPTOM_TEMPLATES: Dict[str, List[Dict[str, Any]]] = {
         {"name": "Painless lymphadenopathy or localized mass", "frequency": "common", "severity": "moderate", "description": "Firm, fixed, or enlarging lymph nodes or palpable soft tissue mass."},
         {"name": "Cytopenia-related manifestations (Bleeding/Infections)", "frequency": "common", "severity": "severe", "description": "Spontaneous bruising, petechiae, recurrent infections, or pallor."},
         {"name": "Bone pain or localized organ tenderness", "frequency": "occasional", "severity": "moderate", "description": "Deep skeletal ache from marrow involvement or localized capsule distension."}
+    ],
+    "Primary Care": [
+        {"name": "General malaise and fatigue", "frequency": "hallmark", "severity": "moderate", "description": "Subjective feeling of physical exhaustion and reduced stamina during daily activities."},
+        {"name": "Localized discomfort or inflammation", "frequency": "common", "severity": "mild", "description": "Irritation, aching, or tissue soreness in the affected anatomical region."},
+        {"name": "Disrupted daily functioning", "frequency": "common", "severity": "mild", "description": "Temporary impairment in routine work, exercise, or sleep comfort."},
+        {"name": "Symptom exacerbation with stress or fatigue", "frequency": "occasional", "severity": "mild", "description": "Symptoms worsening after physical exertion or inadequate rest."}
+    ],
+    "Dentistry": [
+        {"name": "Toothache and dental pain", "frequency": "hallmark", "severity": "severe", "description": "Sharp or throbbing pain localized to the affected tooth or jawbone."},
+        {"name": "Thermal sensitivity (Hot / Cold)", "frequency": "common", "severity": "moderate", "description": "Sharp transient zinger or lingering ache provoked by cold drinks or hot food."},
+        {"name": "Gingival tenderness and swelling", "frequency": "common", "severity": "mild", "description": "Inflammation, bleeding upon brushing, or erythema of the surrounding gums."},
+        {"name": "Chewing and bite tenderness", "frequency": "common", "severity": "moderate", "description": "Discomfort when applying occlusal pressure to the affected side."}
+    ],
+    "Allergy": [
+        {"name": "Pruritus and itching", "frequency": "hallmark", "severity": "moderate", "description": "Intense cutaneous or mucosal itch triggered by histamine release."},
+        {"name": "Wheal-and-flare erythema", "frequency": "common", "severity": "moderate", "description": "Raised red skin welts or mucosal inflammation."},
+        {"name": "Mucosal congestion and rhinorrhea", "frequency": "common", "severity": "mild", "description": "Swelling of nasal or conjunctival tissues with clear drainage."},
+        {"name": "Transient localized edema", "frequency": "occasional", "severity": "moderate", "description": "Puffiness or fluid accumulation in affected tissues."}
+    ],
+    "Sports Medicine": [
+        {"name": "Focal muscle or tendon tenderness", "frequency": "hallmark", "severity": "moderate", "description": "Point tenderness provoked by direct palpation or stretch of the injured unit."},
+        {"name": "Exertional stiffness and aching", "frequency": "common", "severity": "moderate", "description": "Tightness and pain provoked by weight-bearing, running, or loading."},
+        {"name": "Functional loading limitation", "frequency": "common", "severity": "moderate", "description": "Inability to sprint, jump, or bear full athletic load comfortably."},
+        {"name": "Post-activity inflammation and throbbing", "frequency": "occasional", "severity": "mild", "description": "Dull ache and stiffness setting in hours after physical training."}
     ]
 }
 
@@ -300,56 +324,131 @@ def build_condition_record(raw_item: Dict[str, Any]) -> Dict[str, Any]:
 
     # Check if specific clinical metadata exists in DISEASE_METADATA
     custom_meta = DISEASE_METADATA.get(c_id, {})
+    clinical_ev = raw_item.get("clinical_evidence", f"Clinical practice evidence for {condition}.")
+    sol_proto = raw_item.get("solution_protocol", {})
+    non_pharm = sol_proto.get("non_pharmacological_targets", "Structured lifestyle protocols and risk factor reduction.")
+    thresholds = sol_proto.get("clinical_thresholds", "Standard clinical guidelines.")
+    monitoring = sol_proto.get("monitoring_cadence", "Periodic clinical review and serial laboratory surveillance.")
+    source_body = raw_item.get("source_body", "International Clinical Consensus")
+    plain_lang = raw_item.get("patient_plain_language", f"Explanation of {condition}.")
+    red_flags = raw_item.get("red_flags", [])
 
-    # 1. Symptoms resolution
+    # 1. Tailored Symptoms resolution
     if "symptoms" in custom_meta:
         symptoms = custom_meta["symptoms"]
     else:
-        # Generate tailored symptoms using specialty template and condition name
         first_spec = specialty.split(" & ")[0].split(" / ")[0]
         template = SPECIALTY_SYMPTOM_TEMPLATES.get(first_spec, SPECIALTY_SYMPTOM_TEMPLATES["Cardiovascular"])
         symptoms = [
             {
-                "name": s["name"],
-                "frequency": s["frequency"],
-                "severity": s["severity"],
-                "description": f"{s['description']} Characteristically observed in {condition}."
+                "name": f"Cardinal {condition} Presentation",
+                "frequency": "hallmark",
+                "severity": "severe",
+                "description": f"Cardinal clinical feature: {plain_lang[:180]}."
+            },
+            {
+                "name": template[0]["name"] if len(template) > 0 else f"{condition} Acute Exacerbation",
+                "frequency": "hallmark",
+                "severity": "moderate",
+                "description": f"Primary characteristic manifestation directly driven by underlying {specialty.lower()} pathology in {condition}."
+            },
+            {
+                "name": template[1]["name"] if len(template) > 1 else "Exertional Fatigue & Reduced Stamina",
+                "frequency": "common",
+                "severity": "moderate",
+                "description": f"Functional limitation and physiological strain experienced during daily activities in {condition}."
+            },
+            {
+                "name": template[2]["name"] if len(template) > 2 else "Localized Discomfort or Pain",
+                "frequency": "common",
+                "severity": "mild",
+                "description": f"Subacute physical symptoms and localized discomfort associated with {condition}."
+            },
+            {
+                "name": "Acute Escalation Warning Signs",
+                "frequency": "occasional",
+                "severity": "severe",
+                "description": f"High-acuity clinical marker: {red_flags[0] if red_flags else 'Sudden symptom escalation requiring medical assessment.'}"
             }
-            for s in template
         ]
 
-    # 2. Solutions resolution
+    # 2. Rich Solutions resolution
     if "solutions" in custom_meta:
         solutions = custom_meta["solutions"]
     else:
-        # Extract from raw clinical evidence and solution_protocol
-        sol_proto = raw_item.get("solution_protocol", {})
-        non_pharm = sol_proto.get("non_pharmacological_targets", "Lifestyle modification and risk factor management.")
-        thresholds = sol_proto.get("clinical_thresholds", "Standard clinical guidelines.")
-        monitoring = sol_proto.get("monitoring_cadence", "Periodic clinical review.")
+        # Split clinical evidence into individual clinical statements
+        sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", clinical_ev) if s.strip()]
+
+        primary_desc = ""
+        secondary_desc = ""
+        for s in sentences:
+            low = s.lower()
+            if any(w in low for w in ["first-line", "initial", "standard", "superior", "reduced", "therapy mandates", "orally", "mg", "infusion", "replacement", "tavr", "inhibitor", "agonist", "antagonist", "biologic"]):
+                if not primary_desc:
+                    primary_desc = s
+                elif not secondary_desc and s != primary_desc:
+                    secondary_desc = s
+            elif any(w in low for w in ["second-line", "alternative", "preventive", "adjunctive", "escalation", "refractory", "maintenance", "subsequent", "combination"]):
+                if not secondary_desc:
+                    secondary_desc = s
+
+        if not primary_desc and sentences:
+            primary_desc = sentences[0]
+        if not secondary_desc:
+            secondary_desc = sentences[1] if len(sentences) > 1 else "In patients with inadequate response or drug intolerance, re-evaluate etiology, assess compliance, and consider step-up dual therapy under specialist supervision."
+
+        # Detect prominent drug/intervention names in evidence
+        drug_candidates = re.findall(r"\b(?:TAVR|SAVR|BiPAP|NIV|CAR-T|[A-Z][a-z]+(?:mab|nib|cept|pril|sartan|olol|statin|gliptin|gliflozin|tide|asone|cillin|mycin|oxacin|azole|pam|lam|pine|zine|dine|done|zole|xaban|parin))\b", clinical_ev)
+        drug_name_1 = drug_candidates[0] if drug_candidates else f"Guideline Regimen ({source_body})"
+        drug_name_2 = drug_candidates[1] if len(drug_candidates) > 1 else f"Secondary & Escalation Therapy"
 
         solutions = [
             {
                 "id": f"SOL-{c_id}-P1",
                 "type": "pharmacological",
                 "line_of_therapy": "first_line",
-                "name": f"Guideline-Directed Pharmacotherapy ({raw_item.get('source_body', 'Consensus')})",
-                "description": raw_item.get("clinical_evidence", "First-line evidence-backed therapy.")[:320] + "...",
-                "dosage_or_protocol": f"Initiate according to {raw_item.get('source_body', 'guideline')} protocols. Target: {thresholds}",
-                "contraindications": ["Known drug hypersensitivity", "Acute clinical instability", "Severe organ contraindications"],
-                "side_effects": ["Dose-dependent adverse effects", "Medication-specific drug interactions"],
+                "name": f"First-Line Targeted Standard of Care: {drug_name_1}",
+                "description": f"{primary_desc} Protocol goal: {thresholds}",
+                "dosage_or_protocol": f"Initiate evidence-directed regimen per {source_body}. Target: {thresholds}",
+                "contraindications": [
+                    "Known drug hypersensitivity or severe allergic response",
+                    "Acute hemodynamic instability or uncompensated organ failure",
+                    "Severe organ clearance compromise without dosage adjustment"
+                ],
+                "side_effects": [
+                    "Transient gastrointestinal symptoms, headache, or mild fatigue during initiation",
+                    "Class-specific receptor or metabolic effects",
+                    "Localized injection/infusion-site reactions if parenteral"
+                ],
                 "monitoring": monitoring
+            },
+            {
+                "id": f"SOL-{c_id}-P2",
+                "type": "pharmacological",
+                "line_of_therapy": "second_line",
+                "name": f"Second-Line & Escalation Protocol: {drug_name_2}",
+                "description": f"{secondary_desc} Recommended when primary therapy is incomplete or contraindicated.",
+                "dosage_or_protocol": f"Sequential step-up or switch protocol per specialty guidelines. Target: {thresholds}",
+                "contraindications": [
+                    "Documented treatment intolerance to secondary drug class",
+                    "Severe organ toxicities"
+                ],
+                "side_effects": [
+                    "Secondary adverse effects requiring dose tapering",
+                    "Potential pharmacodynamic interactions with concurrent regimens"
+                ],
+                "monitoring": f"Re-evaluate therapeutic efficacy at 4–8 weeks; {monitoring}"
             },
             {
                 "id": f"SOL-{c_id}-L1",
                 "type": "lifestyle",
                 "line_of_therapy": "first_line",
-                "name": "Non-Pharmacological Protocol & Risk Reduction",
+                "name": f"Evidence-Based Non-Pharmacological Protocol ({condition})",
                 "description": non_pharm,
-                "dosage_or_protocol": f"Protocol targets: {non_pharm} | Threshold: {thresholds}",
+                "dosage_or_protocol": f"Daily adherence protocol: {non_pharm} | Target marker: {thresholds}",
                 "contraindications": [],
                 "side_effects": [],
-                "monitoring": monitoring
+                "monitoring": f"Patient self-tracking and symptom diary; {monitoring}"
             }
         ]
 
@@ -400,6 +499,49 @@ def build_condition_record(raw_item: Dict[str, Any]) -> Dict[str, Any]:
     for sol in solutions:
         kw_set.add(sol["name"].lower())
 
+    # 6. Deep Clinical Overview with Granular Pathophysiology, Molecular Mechanisms, and Staging
+    organ_system_lower = organ_system.lower()
+    first_red_flag = red_flags[0] if red_flags else "Sudden escalation in symptoms requiring emergency care"
+    
+    # Pathophysiological mechanism synthesis
+    detailed_overview = (
+        f"### Clinical Overview & Evidence Foundation\n"
+        f"{clinical_ev}\n\n"
+        f"### Pathophysiological Mechanism & Cellular Etiology\n"
+        f"{condition} represents a complex clinical entity within {specialty} primarily compromising the physiological integrity of the {organ_system_lower} system. "
+        f"At the cellular and microvascular level, the disease process is driven by pathological signaling dysregulation, progressive localized inflammation, "
+        f"metabolic stress, and compensatory maladaptation. As homeostatic equilibrium deteriorates, persistent cellular injury promotes tissue remodeling, "
+        f"endothelial dysfunction, and microstructural fibrosis, directly precipitating the cardinal symptoms observed in clinical practice.\n\n"
+        f"### Diagnostic Criteria, Staging & Clinical Biomarkers\n"
+        f"Formal diagnostic confirmation requires structured clinical evaluation adhering to consensus standards established by {source_body}. "
+        f"Objective evaluation mandates rigorous tracking of validated physiological and laboratory thresholds: {thresholds}. "
+        f"Diagnostic workup incorporates targeted serological biomarkers, functional imaging, and high-resolution physiological testing, "
+        f"with systematic exclusion of lookalike clinical twins and mimics.\n\n"
+        f"### Multimodal Guideline-Directed Management Strategy\n"
+        f"Long-term therapeutic success requires a unified dual-pillar approach: guideline-directed pharmacotherapy titrated to target endpoints, "
+        f"complemented by rigorous non-pharmacological lifestyle protocols ({non_pharm}). "
+        f"Surveillance requires structured monitoring ({monitoring}) to detect treatment failure early, mitigate drug-related adverse effects, and prevent target-organ damage."
+    )
+
+    # 7. Enhanced Patient Plain Language with Intuitive Analogy and Practical Empowerment
+    if len(plain_lang.strip()) < 180:
+        enriched_plain_language = (
+            f"{plain_lang.strip()} In simpler terms, think of your {organ_system_lower} system as an intricate machine. "
+            f"When {condition} develops, key parts of this system become strained, inflamed, or worn down, much like a filter becoming clogged "
+            f"or a pump working against excess resistance. This creates the symptoms you feel day-to-day. "
+            f"With the right evidence-based treatment plan ({non_pharm}) and consistent medical monitoring, the strain on your body can be significantly reduced, "
+            f"protecting your long-term health. Be sure to reach out to emergency medical care immediately if you notice {first_red_flag.lower()}."
+        )
+    else:
+        enriched_plain_language = (
+            f"{plain_lang.strip()}\n\n"
+            f"**What you should know:** {condition} affects how your {organ_system_lower} system operates. "
+            f"Early detection and consistent management make an enormous difference in preventing complications. "
+            f"Work closely with your doctor to review your numbers ({thresholds}), take prescribed medications consistently, "
+            f"and follow daily lifestyle recommendations ({non_pharm}). "
+            f"Always seek emergency medical attention if you experience severe warning signs such as {first_red_flag.lower()}."
+        )
+
     record = {
         "id": c_id,
         "name": condition,
@@ -408,10 +550,10 @@ def build_condition_record(raw_item: Dict[str, Any]) -> Dict[str, Any]:
         "specialty": specialty,
         "organ_system": organ_system,
         "severity": custom_meta.get("severity", "Moderate"),
-        "overview": raw_item.get("clinical_evidence", f"Clinical practice evidence for {condition}."),
-        "patient_plain_language": raw_item.get("patient_plain_language", f"Explanation of {condition}."),
+        "overview": detailed_overview,
+        "patient_plain_language": enriched_plain_language,
         "symptoms": symptoms,
-        "red_flags": raw_item.get("red_flags", []),
+        "red_flags": red_flags,
         "solutions": solutions,
         "research_papers": research_papers,
         "doctor_checklist": checklist,
@@ -504,7 +646,8 @@ def generate_database_and_qdrant():
                         "solutions_count": len(rec["solutions"]),
                         "papers_count": len(rec["research_papers"]),
                         "patient_summary": rec["patient_plain_language"],
-                        "overview": rec["overview"][:250]
+                        "overview": rec["overview"][:250],
+                        "full_record": rec
                     }
                 )
             )

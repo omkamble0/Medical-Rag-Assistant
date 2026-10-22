@@ -195,11 +195,11 @@ class MedicalLLMGateway:
                 from langchain_core.messages import SystemMessage, HumanMessage
 
                 llm = ChatOpenAI(
-                    model=model_name or os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
+                    model=model_name or os.getenv("GEMINI_MODEL", "gemini-flash-latest"),
                     temperature=temperature,
                     api_key=SecretStr(self.gemini_key),
                     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-                    timeout=12.0
+                    timeout=4.0
                 )
                 messages: List[Any] = []
                 if system_prompt:
@@ -210,14 +210,14 @@ class MedicalLLMGateway:
                 return {
                     "content": str(resp.content),
                     "provider": "Google Gemini",
-                    "model": model_name or os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
+                    "model": model_name or os.getenv("GEMINI_MODEL", "gemini-flash-latest"),
                     "status": "success"
                 }
             except Exception as e:
                 logger.warning(f"Google Gemini call via OpenAI endpoint failed: {e}. Trying direct REST API...")
                 try:
-                    with httpx.Client(timeout=12.0) as client:
-                        target_model = model_name or os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+                    with httpx.Client(timeout=4.0) as client:
+                        target_model = model_name or os.getenv("GEMINI_MODEL", "gemini-flash-latest")
                         url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={self.gemini_key}"
                         combined_text = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
                         payload = {
@@ -365,11 +365,11 @@ class MedicalLLMGateway:
                 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
                 llm = ChatOpenAI(
-                    model=model_name or os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
+                    model=model_name or os.getenv("GEMINI_MODEL", "gemini-flash-latest"),
                     temperature=temperature,
                     api_key=SecretStr(self.gemini_key),
                     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-                    timeout=12.0
+                    timeout=4.0
                 )
                 lc_messages: List[Any] = []
                 for m in messages:
@@ -386,14 +386,14 @@ class MedicalLLMGateway:
                 return {
                     "content": str(resp.content),
                     "provider": "Google Gemini",
-                    "model": model_name or os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
+                    "model": model_name or os.getenv("GEMINI_MODEL", "gemini-flash-latest"),
                     "status": "success"
                 }
             except Exception as e:
                 logger.warning(f"Google Gemini chat call via OpenAI endpoint failed: {e}. Trying direct REST API...")
                 try:
-                    with httpx.Client(timeout=12.0) as client:
-                        target_model = model_name or os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+                    with httpx.Client(timeout=4.0) as client:
+                        target_model = model_name or os.getenv("GEMINI_MODEL", "gemini-flash-latest")
                         url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={self.gemini_key}"
                         # Convert messages to Gemini contents structure
                         gemini_contents = []

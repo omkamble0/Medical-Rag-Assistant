@@ -1,6 +1,9 @@
 import time
 import re
+import logging
 from typing import List, Dict, Any, Tuple, Optional
+
+logger = logging.getLogger(__name__)
 from app.models.enums import UserMode, EvidenceLevel, ConfidenceStatus
 from app.models.schemas import (
     SearchResponse, SourceDocument, JargonItem, DoctorQuestion,
@@ -324,6 +327,73 @@ def get_elaboration_leadings(query: str, sources: List[SourceDocument]) -> List[
     return leadings
 
 
+def find_matched_disease_record(query: str, sources: Optional[List[SourceDocument]] = None):
+    """
+    Retrieves the authoritative DiseaseRecord from medical_db corresponding to the query or retrieved sources.
+    Searches across:
+    1. DOC-DB source IDs (e.g., DOC-DB-DIS-CARD-001 or paper IDs)
+    2. Exact and fuzzy disease name match from query
+    3. Source titles and keywords
+    """
+    try:
+        from app.services.medical_db import medical_db
+        # 1. First priority: Search medical_db by cleaned query
+        clean_q = query.strip()
+        for pfx in [
+            "what are the verified clinical guidelines and evidence-backed treatments for",
+            "what are the clinical guidelines and evidence-backed treatments for",
+            "what are the verified clinical guidelines for",
+            "what are the clinical guidelines for",
+            "what are the treatments for",
+            "what is the treatment for",
+            "what are the guidelines for",
+            "treatment for",
+            "what is",
+            "how to treat"
+        ]:
+            if clean_q.lower().startswith(pfx):
+                clean_q = clean_q[len(pfx):].strip()
+
+        matched = medical_db.search_diseases(query=clean_q, limit=1)
+        if matched:
+            return matched[0]
+
+        # 2. Second priority: Search medical_db by raw query
+        matched_raw = medical_db.search_diseases(query=query, limit=1)
+        if matched_raw:
+            return matched_raw[0]
+
+        # 3. Third priority: Check retrieved sources
+        if sources:
+            for s in sources:
+                if s.id and s.id.startswith("DOC-DB-"):
+                    d_id = s.id.replace("DOC-DB-", "")
+                    rec = medical_db.get_disease_by_id(d_id)
+                    if rec:
+                        return rec
+                if s.title and ":" in s.title:
+                    candidate_name = s.title.split(":")[0].strip()
+                    m = medical_db.search_diseases(query=candidate_name, limit=1)
+                    if m:
+                        return m[0]
+
+            if sources[0].title:
+                m_top = medical_db.search_diseases(query=sources[0].title, limit=1)
+                if m_top:
+                    return m_top[0]
+        # 4. Fourth priority: Dynamic monograph generation from 133,000+ CMS & WHO catalog
+        try:
+            from app.services.encyclopedia_engine import encyclopedia_engine
+            tax_rec = encyclopedia_engine.synthesize_record_from_taxonomy(clean_q)
+            if tax_rec:
+                return tax_rec
+        except Exception as e:
+            logger.debug(f"Taxonomy fallback lookup notice: {e}")
+    except Exception as e:
+        logger.debug(f"find_matched_disease_record lookup error: {e}")
+    return None
+
+
 def generate_clinician_suggestions(query: str, sources: List[SourceDocument]) -> ClinicianSuggestion:
     """
     Generates structured, liability-free clinical suggestions for physicians & pharmacists:
@@ -484,7 +554,54 @@ def generate_clinician_suggestions(query: str, sources: List[SourceDocument]) ->
             ]
         )
     else:
-        # Fallback structured clinician suggestion
+        matched_rec = find_matched_disease_record(query, sources)
+        if matched_rec:
+            first_lines = [s for s in matched_rec.solutions if s.line_of_therapy == "first_line"]
+            second_lines = [s for s in matched_rec.solutions if s.line_of_therapy in ("second_line", "adjunctive", "maintenance", "rescue")]
+
+            subgroups = []
+            if matched_rec.research_papers:
+                p = matched_rec.research_papers[0]
+                subgroups.append(f"Landmark Trial Investigation ({p.title}): {p.study_design} (Cohort n={p.sample_size or 'multicenter'}). Key Outcome: {p.key_findings}")
+                subgroups.append(f"Translational GDMT Takeaway: {p.clinical_takeaway}")
+            else:
+                subgroups.append(f"Specialty Cohort Stratification ({matched_rec.specialty}): Stratify by disease severity ({matched_rec.severity}) and target organ risk ({matched_rec.organ_system}).")
+                subgroups.append(f"Diagnostic Coding: Confirm ICD-10-CM {matched_rec.icd10_code} diagnostic criteria prior to escalating GDMT.")
+
+            titrations = []
+            for sol in first_lines[:2]:
+                titrations.append(f"Tier-1 First-Line ({sol.name}): Protocol: {sol.dosage_or_protocol or 'Standard clinical initiation'}. Monitoring: {sol.monitoring or 'Routine biomarker surveillance'}.")
+            for sol in second_lines[:1]:
+                titrations.append(f"Tier-2 Escalation ({sol.name}): {sol.description} (Protocol: {sol.dosage_or_protocol or 'Step-up regimen'}).")
+            if not titrations:
+                titrations.append("Step-up Protocol: Gradual 2-4 week titration intervals to optimize target receptor engagement and minimize adverse discontinuations.")
+
+            guidelines = [
+                f"{matched_rec.specialty} Practice Guidelines: First-line consensus designates {', '.join([s.name for s in first_lines[:2]]) if first_lines else 'standard pharmacotherapy'} as the evidentiary standard of care.",
+                f"Target Physiological System: Therapeutic pathway directed toward {matched_rec.organ_system.lower()} stabilization."
+            ]
+
+            cis = []
+            ses = []
+            for s in matched_rec.solutions:
+                cis.extend(s.contraindications)
+                ses.extend(s.side_effects)
+            cis_clean = list(dict.fromkeys(cis))[:3]
+            ses_clean = list(dict.fromkeys(ses))[:3]
+
+            ci_list = [
+                f"Contraindications & DDI Screening: {', '.join(cis_clean) if cis_clean else 'Hypersensitivity to active agent, acute hepatic/renal compromise.'} Screen for concurrent CYP450 interactions.",
+                f"Safety Surveillance & Red Flags: Monitor for adverse reactions ({', '.join(ses_clean) if ses_clean else 'dose-dependent effects'}). Prompt triage required if patient develops {', '.join(matched_rec.red_flags[:2]) if matched_rec.red_flags else 'unusual severe symptoms'}."
+            ]
+
+            return ClinicianSuggestion(
+                trial_subgroup_analyses=subgroups,
+                titration_protocols=titrations,
+                guideline_comparisons=guidelines,
+                contraindications_interactions=ci_list
+            )
+
+        # General Fallback structured clinician suggestion
         return ClinicianSuggestion(
             trial_subgroup_analyses=[
                 "Stratified Subgroup Analysis: High-risk cohorts with multi-morbidity derive greater absolute risk reduction compared to low-risk cohorts.",
@@ -505,7 +622,7 @@ def generate_clinician_suggestions(query: str, sources: List[SourceDocument]) ->
         )
 
 
-def generate_psa_doctor_questions(query: str, parsed_analysis: ParsedQueryAnalysis) -> List[DoctorQuestion]:
+def generate_psa_doctor_questions(query: str, parsed_analysis: ParsedQueryAnalysis, sources: Optional[List[SourceDocument]] = None) -> List[DoctorQuestion]:
     """
     Stage 4: Outbound Doctor Consultation Checklist Engine.
     Formulates structured, non-prescriptive doctor consultation questions using the
@@ -725,27 +842,50 @@ def generate_psa_doctor_questions(query: str, parsed_analysis: ParsedQueryAnalys
             )
         ]
     else:
-        # Default P-S-A template tailored to query
-        questions = [
-            DoctorQuestion(
-                question=f"What baseline lab values, staging, or health metrics do we need to verify regarding '{query[:50]}'?",
-                category="Baseline Health Metrics",
-                psa_type="Parameter",
-                rationale="Clinical decision-making relies on baseline organ function and accurate diagnostic staging."
-            ),
-            DoctorQuestion(
-                question="Are there any known contraindications, side effects, or drug interactions I should be mindful of?",
-                category="Safety & Interactions",
-                psa_type="Safety",
-                rationale="Ensuring safe co-administration and recognizing early warning signs protects patient safety."
-            ),
-            DoctorQuestion(
-                question="What are our next steps for home tracking, lifestyle adjustments, and scheduling a follow-up review?",
-                category="Follow-up & Self-Care",
-                psa_type="Action",
-                rationale="Non-prescriptive shared decision-making empowers patients to partner effectively with their clinical team."
-            )
-        ]
+        matched_rec = find_matched_disease_record(query, sources)
+        if matched_rec and matched_rec.doctor_checklist:
+            questions = [
+                DoctorQuestion(
+                    question=matched_rec.doctor_checklist.parameter_question,
+                    category=f"{matched_rec.name} Diagnostic Metrics",
+                    psa_type="Parameter",
+                    rationale=f"Accurate baseline and monitoring metrics for {matched_rec.name} ensure targeted clinical staging."
+                ),
+                DoctorQuestion(
+                    question=matched_rec.doctor_checklist.safety_question,
+                    category=f"{matched_rec.name} Safety & Drug Interactions",
+                    psa_type="Safety",
+                    rationale=f"Reviewing safety cutoffs and contraindications for {matched_rec.name} treatments prevents adverse events."
+                ),
+                DoctorQuestion(
+                    question=matched_rec.doctor_checklist.action_threshold_question,
+                    category=f"{matched_rec.name} Escalation & Action Plan",
+                    psa_type="Action",
+                    rationale=f"Knowing when to seek immediate medical intervention or adjust therapy for {matched_rec.name} optimizes clinical outcomes."
+                )
+            ]
+        else:
+            # Default P-S-A template tailored to query
+            questions = [
+                DoctorQuestion(
+                    question=f"What baseline lab values, staging, or health metrics do we need to verify regarding '{query[:50]}'?",
+                    category="Baseline Health Metrics",
+                    psa_type="Parameter",
+                    rationale="Clinical decision-making relies on baseline organ function and accurate diagnostic staging."
+                ),
+                DoctorQuestion(
+                    question="Are there any known contraindications, side effects, or drug interactions I should be mindful of?",
+                    category="Safety & Interactions",
+                    psa_type="Safety",
+                    rationale="Ensuring safe co-administration and recognizing early warning signs protects patient safety."
+                ),
+                DoctorQuestion(
+                    question="What are our next steps for home tracking, lifestyle adjustments, and scheduling a follow-up review?",
+                    category="Follow-up & Self-Care",
+                    psa_type="Action",
+                    rationale="Non-prescriptive shared decision-making empowers patients to partner effectively with their clinical team."
+                )
+            ]
 
     return questions
 
@@ -760,7 +900,7 @@ def generate_patient_suggestions(
     strictly limited to lifestyle modifications, P-S-A doctor questions, and symptom monitoring.
     """
     q_low = query.lower()
-    questions = generate_psa_doctor_questions(query, parsed_analysis)
+    questions = generate_psa_doctor_questions(query, parsed_analysis, sources)
 
     if any(k in q_low for k in ["covid", "paxlovid", "nirmatrelvir", "antiviral"]):
         return PatientSuggestion(
@@ -889,6 +1029,37 @@ def generate_patient_suggestions(
             ]
         )
     else:
+        matched_rec = find_matched_disease_record(query, sources)
+        if matched_rec:
+            lifestyles = [s for s in matched_rec.solutions if s.type == "lifestyle"]
+            first_lines = [s for s in matched_rec.solutions if s.line_of_therapy == "first_line"]
+
+            recs = []
+            for sol in lifestyles[:2]:
+                recs.append(f"{sol.name}: {sol.description}")
+            if not recs:
+                recs.append(f"Condition-Directed Daily Care: Establish consistent daily routines to support {matched_rec.organ_system.lower()} function.")
+                recs.append("Hydration & Whole-Food Nutrition: Maintain steady hydration and wholesome meals to support energy and drug absorption.")
+            if first_lines and first_lines[0].dosage_or_protocol:
+                recs.append(f"Medication Schedule Adherence: Take treatments consistently as prescribed (Target: {first_lines[0].dosage_or_protocol}).")
+            else:
+                recs.append("Medication Adherence: Take prescribed treatments at consistent daily times to maintain steady therapeutic levels.")
+
+            metrics = []
+            metrics.append(f"Keep a daily symptom diary noting hallmark signs: {', '.join([s.name for s in matched_rec.symptoms[:3]])}.")
+            if first_lines and first_lines[0].monitoring:
+                metrics.append(f"Clinical surveillance parameter: {first_lines[0].monitoring}.")
+            else:
+                metrics.append("Track daily energy levels and any aggravating or relieving triggers.")
+            if matched_rec.red_flags:
+                metrics.append(f"Immediate action trigger: Report warning signs promptly ({', '.join(matched_rec.red_flags[:2])}).")
+
+            return PatientSuggestion(
+                lifestyle_recommendations=recs,
+                questions_for_doctor=questions,
+                monitoring_metrics=metrics
+            )
+
         return PatientSuggestion(
             lifestyle_recommendations=[
                 "Balanced Daily Nutrition: Incorporate unprocessed whole foods, lean proteins, and stay consistently hydrated with water.",
@@ -927,15 +1098,30 @@ def generate_clinician_synthesis(
     citation_list = [f"[{i+1}]" for i in range(len(sources))]
     all_citations = ", ".join(citation_list)
 
+    matched_rec = find_matched_disease_record(query, sources)
+
     # 1. Pathophysiologic Mechanism & Disease Overview
-    pathophysiology_section = (
-        f"### 1. Disease Overview, Pathophysiologic Mechanisms & Biomarkers\n"
-        f"According to international clinical consensus guidelines and peer-reviewed randomized trials, clinical management of **\"{query}\"** "
-        f"is structured around targeted pathway modulation and preservation of target organ function [{all_citations}]. "
-        f"Pathophysiologic progression is driven by cellular and neurohormonal dysregulation, endothelial remodeling, inflammatory signaling, "
-        f"and receptor-level pharmacodynamic sensitivity [1]. Timely initiation of guideline-directed therapy restores homeostatic equilibrium, "
-        f"counteracts maladaptive compensatory mechanisms, and prevents downstream end-organ damage.\n\n"
-    )
+    if matched_rec:
+        cond_name = matched_rec.name
+        icd_str = f" (ICD-10-CM: {matched_rec.icd10_code} | Specialty: {matched_rec.specialty} | Target System: {matched_rec.organ_system})"
+        symptoms_list = ", ".join([s.name for s in matched_rec.symptoms])
+        pathophysiology_section = (
+            f"### 1. Disease Overview, Pathophysiologic Mechanisms & Biomarkers\n\n"
+            f"**Clinical Condition:** **{cond_name}**{icd_str} [{all_citations}].\n\n"
+            f"**Etiology & Pathophysiologic Cascade:**\n\n"
+            f"{matched_rec.overview} [1].\n\n"
+            f"• **Associated Clinical Biomarkers & Features:**\n  {symptoms_list} [1].\n\n"
+            f"• **Diagnostic & Severity Spectrum:**\n  Typical acuity classified as **{matched_rec.severity}**. Early biomarker verification and guideline initiation prevent secondary complications.\n\n"
+        )
+    else:
+        pathophysiology_section = (
+            f"### 1. Disease Overview, Pathophysiologic Mechanisms & Biomarkers\n\n"
+            f"According to international clinical consensus guidelines and peer-reviewed randomized trials, clinical management of **\"{query}\"** "
+            f"is structured around targeted pathway modulation and preservation of target organ function [{all_citations}].\n\n"
+            f"Pathophysiologic progression is driven by cellular and neurohormonal dysregulation, endothelial remodeling, inflammatory signaling, "
+            f"and receptor-level pharmacodynamic sensitivity [1]. Timely initiation of guideline-directed therapy restores homeostatic equilibrium, "
+            f"counteracts maladaptive compensatory mechanisms, and prevents downstream end-organ damage.\n\n"
+        )
 
     # Context gaps if any
     gaps_clinical_note = ""
@@ -944,52 +1130,92 @@ def generate_clinician_synthesis(
         gaps_clinical_note = f"**Key Clinical Parameters & Patient Variables:**\n{gaps_items}\n\n"
 
     # 2. Detailed Clinical Trial & Evidence Analysis
+    ev_val = top_s.evidence_level.value if hasattr(top_s.evidence_level, 'value') else str(top_s.evidence_level)
     primary_analysis = (
-        f"• **Primary Landmark Investigation:** *{top_s.title}* ({top_s.journal}, {top_s.year}) | **Evidence Grade:** Oxford CEBM {top_s.evidence_level.value} [1]\n"
-        f"  - **Trial Design & Reference:** Double-blind randomized controlled trial / systematic meta-analysis | `{top_s.doi_or_pmid or 'PMID Indexed'}`\n"
-        f"  - **Quantitative Findings & Trial Excerpt:** {top_s.snippet} [1]\n"
-        f"  - **Primary Endpoint & Effect Size:** {top_s.key_takeaway}\n"
+        f"• **Primary Landmark Investigation:** *{top_s.title}* ({top_s.journal}, {top_s.year}) | **Evidence Grade:** Oxford CEBM {ev_val} [1]\n\n"
+        f"  - **Trial Design & Reference:** Double-blind randomized controlled trial / systematic meta-analysis | `{top_s.doi_or_pmid or 'PMID Indexed'}`\n\n"
+        f"  - **Quantitative Findings & Trial Excerpt:** {top_s.snippet} [1]\n\n"
+        f"  - **Primary Endpoint & Effect Size:** {top_s.key_takeaway}\n\n"
     )
 
     secondary_analysis = ""
     if sec_s:
+        sec_ev = sec_s.evidence_level.value if hasattr(sec_s.evidence_level, 'value') else str(sec_s.evidence_level)
         secondary_analysis = (
-            f"• **Corroborating Clinical Trial Evidence:** *{sec_s.title}* ({sec_s.journal}, {sec_s.year}) | **Evidence Grade:** Oxford CEBM {sec_s.evidence_level.value} [2]\n"
-            f"  - **Design & Findings:** {sec_s.snippet} [2]\n"
-            f"  - **Translational Takeaway:** {sec_s.key_takeaway}\n"
+            f"• **Corroborating Clinical Trial Evidence:** *{sec_s.title}* ({sec_s.journal}, {sec_s.year}) | **Evidence Grade:** Oxford CEBM {sec_ev} [2]\n\n"
+            f"  - **Design & Findings:** {sec_s.snippet} [2]\n\n"
+            f"  - **Translational Takeaway:** {sec_s.key_takeaway}\n\n"
         )
 
     tertiary_analysis = ""
     if third_s:
+        third_ev = third_s.evidence_level.value if hasattr(third_s.evidence_level, 'value') else str(third_s.evidence_level)
         tertiary_analysis = (
-            f"• **Supplementary Guideline / Cohort Analysis:** *{third_s.title}* ({third_s.journal}, {third_s.year}) | **Class:** {third_s.evidence_level.value} [3]\n"
-            f"  - **Evidence Summary:** {third_s.snippet} [3]\n"
-            f"  - **Clinical Synthesis:** {third_s.key_takeaway}\n"
+            f"• **Supplementary Guideline / Cohort Analysis:** *{third_s.title}* ({third_s.journal}, {third_s.year}) | **Class:** {third_ev} [3]\n\n"
+            f"  - **Evidence Summary:** {third_s.snippet} [3]\n\n"
+            f"  - **Clinical Synthesis:** {third_s.key_takeaway}\n\n"
         )
 
     trial_analysis_section = (
-        f"### 2. In-Depth Clinical Trial & Research Paper Analysis\n"
+        f"### 2. In-Depth Clinical Trial & Research Paper Analysis\n\n"
         f"{primary_analysis}"
         f"{secondary_analysis}"
         f"{tertiary_analysis}"
-        f"**Methodological Appraisal & Evidentiary Consensus:** Evidence meets **{top_s.evidence_level.value}** criteria endorsed by international specialty consensus guidelines [{all_citations}].\n\n"
+        f"**Methodological Appraisal & Evidentiary Consensus:** Evidence meets **{ev_val}** criteria endorsed by international specialty consensus guidelines [{all_citations}].\n\n"
     )
 
     # 3. GDMT & Clinical Solutions
-    gdmt_solutions_section = (
-        f"### 3. Guideline-Directed Medical Therapy (GDMT) Solutions & Titration Protocols\n"
-        f"• **First-Line Standard of Care (Tier 1):** Initiate guideline-recommended pharmacotherapy at standard starting doses, followed by step-up titration at 2–4 week intervals toward proven target evidentiary ranges [1, 2].\n"
-        f"• **Second-Line / Adjunctive Therapies:** For patients with incomplete response or therapeutic intolerance after an adequate 4–8 week trial, switch to an alternative first-line class or initiate evidence-based dual augmentation [1].\n"
-        f"• **Refractory & Escalation Criteria:** Monitor clinical response using validated rating scales and objective biomarkers. In refractory cases, specialist referral and advanced multidisciplinary protocols are recommended [{all_citations}].\n\n"
-    )
+    if matched_rec and matched_rec.solutions:
+        first_lines = [s for s in matched_rec.solutions if s.line_of_therapy == "first_line"]
+        second_lines = [s for s in matched_rec.solutions if s.line_of_therapy in ("second_line", "adjunctive", "maintenance", "rescue")]
+
+        first_line_str = "\n".join([
+            f"  - **{sol.name}:** {sol.description} (Protocol/Dosage: `{sol.dosage_or_protocol or 'Standard clinical initiation'}`). Monitoring: {sol.monitoring or 'Routine clinical surveillance'}."
+            for sol in first_lines
+        ]) if first_lines else "  - Standard guideline-directed first-line pharmacotherapy."
+
+        second_line_str = "\n".join([
+            f"  - **{sol.name}:** {sol.description} (Protocol/Dosage: `{sol.dosage_or_protocol or 'Step-up regimen'}`)."
+            for sol in second_lines
+        ]) if second_lines else "  - Second-line / combination escalation in refractory cases."
+
+        gdmt_solutions_section = (
+            f"### 3. Guideline-Directed Medical Therapy (GDMT) Solutions & Titration Protocols\n\n"
+            f"• **First-Line Standard of Care (Tier 1 Consensus):**\n{first_line_str} [1, 2]\n\n"
+            f"• **Second-Line / Escalation Protocols (Tier 2):**\n{second_line_str} [1]\n\n"
+            f"• **Refractory & Escalation Criteria:** Monitor clinical response using validated rating scales and disease biomarkers. Escalation to tertiary specialty protocols is indicated if incomplete response persists past 4–8 weeks [{all_citations}].\n\n"
+        )
+    else:
+        gdmt_solutions_section = (
+            f"### 3. Guideline-Directed Medical Therapy (GDMT) Solutions & Titration Protocols\n\n"
+            f"• **First-Line Standard of Care (Tier 1):** Initiate guideline-recommended pharmacotherapy at standard starting doses, followed by step-up titration at 2–4 week intervals toward proven target evidentiary ranges [1, 2].\n\n"
+            f"• **Second-Line / Adjunctive Therapies:** For patients with incomplete response or therapeutic intolerance after an adequate 4–8 week trial, switch to an alternative first-line class or initiate evidence-based dual augmentation [1].\n\n"
+            f"• **Refractory & Escalation Criteria:** Monitor clinical response using validated rating scales and objective biomarkers. In refractory cases, specialist referral and advanced multidisciplinary protocols are recommended [{all_citations}].\n\n"
+        )
 
     # 4. Organ Surveillance, Pharmacokinetics & Adverse Reaction Mitigation
-    surveillance_section = (
-        f"### 4. Organ Surveillance, Pharmacokinetics & Adverse Reaction Mitigation\n"
-        f"• **Laboratory Surveillance & Organ Cutoffs:** Baseline comprehensive metabolic panel (CMP), estimated glomerular filtration rate (eGFR), serum electrolytes, and hepatic transaminases must be verified prior to initiation and reassessed periodically during titration [1, 2].\n"
-        f"• **Pharmacokinetic Profile & DDI Mitigation:** Screen for concurrent inhibitors or inducers of relevant CYP450 isoenzymes, renal clearance competition, and pharmacodynamic synergies prior to dose intensification [{all_citations}].\n"
-        f"• **Adverse Event Management:** Clinical trial safety datasets confirm that treatment-emergent adverse reactions are predominantly dose-dependent and transient. Mitigate discontinuation risk through gradual upward dose titration and patient counseling [1, 2].\n\n"
-    )
+    if matched_rec and matched_rec.solutions:
+        all_contraindications = []
+        all_side_effects = []
+        for sol in matched_rec.solutions:
+            all_contraindications.extend(sol.contraindications)
+            all_side_effects.extend(sol.side_effects)
+        ci_text = ", ".join(list(dict.fromkeys(all_contraindications))[:5]) or "Hypersensitivity to active agent, acute severe organ impairment"
+        se_text = ", ".join(list(dict.fromkeys(all_side_effects))[:5]) or "Dose-dependent transient effects"
+
+        surveillance_section = (
+            f"### 4. Organ Surveillance, Pharmacokinetics & Adverse Reaction Mitigation\n\n"
+            f"• **Laboratory Surveillance & Organ Cutoffs:** Baseline comprehensive metabolic panel (CMP), renal function (eGFR), and hepatic transaminases must be verified prior to initiating therapy and reassessed periodically [1, 2].\n\n"
+            f"• **Key Contraindications & DDI Screening:** {ci_text} [{all_citations}]. Screen for concomitant CYP450 inhibitors/inducers and renal clearance interactions.\n\n"
+            f"• **Adverse Reaction Management:** Common treatment-emergent reactions: {se_text}. Mitigate through gradual upward dose titration, meal timing adjustments, and patient education [1, 2].\n\n"
+        )
+    else:
+        surveillance_section = (
+            f"### 4. Organ Surveillance, Pharmacokinetics & Adverse Reaction Mitigation\n\n"
+            f"• **Laboratory Surveillance & Organ Cutoffs:** Baseline comprehensive metabolic panel (CMP), estimated glomerular filtration rate (eGFR), serum electrolytes, and hepatic transaminases must be verified prior to initiation and reassessed periodically during titration [1, 2].\n\n"
+            f"• **Pharmacokinetic Profile & DDI Mitigation:** Screen for concurrent inhibitors or inducers of relevant CYP450 isoenzymes, renal clearance competition, and pharmacodynamic synergies prior to dose intensification [{all_citations}].\n\n"
+            f"• **Adverse Event Management:** Clinical trial safety datasets confirm that treatment-emergent adverse reactions are predominantly dose-dependent and transient. Mitigate discontinuation risk through gradual upward dose titration and patient counseling [1, 2].\n\n"
+        )
 
     answer = (
         f"{pathophysiology_section}"
@@ -1015,9 +1241,15 @@ def generate_patient_synthesis(
     if not sources:
         return "The retrieved clinical guidelines do not contain enough information to address this query.", [], []
 
+    matched_rec = find_matched_disease_record(query, sources)
     top_s = sources[0]
     sec_s = sources[1] if len(sources) > 1 else None
-    short_query = query[:80] + ("..." if len(query) > 80 else "")
+
+    # Condition display name
+    condition_name = matched_rec.name if matched_rec else query.strip()
+    for pfx in ["what are the verified clinical guidelines and evidence-backed treatments for", "what are the guidelines for", "treatment for", "what is", "how to treat"]:
+        if condition_name.lower().startswith(pfx):
+            condition_name = condition_name[len(pfx):].strip()
 
     # Pick forced mechanism-specific analogy mapped strictly to retrieved topic
     q_low = query.lower()
@@ -1033,9 +1265,24 @@ def generate_patient_synthesis(
     if polarity_rule:
         analogy = polarity_rule.clinical_analogy
         research_expl = f"{polarity_rule.patient_explanation} In peer-reviewed clinical research and specialty guidelines, targeted therapies and non-pharmacological care significantly improve daily symptoms and reduce risks [1]."
+    elif matched_rec and matched_rec.patient_plain_language:
+        analogy = matched_rec.patient_plain_language
+        paper = matched_rec.research_papers[0] if matched_rec.research_papers else None
+        if paper:
+            research_expl = (
+                f"Clinical evidence from {paper.journal} (Trial: *{paper.title}*, {paper.year}) demonstrates that "
+                f"{paper.key_findings} [1]. Guideline organizations conclude that timely medical therapy provides measurable, "
+                f"proven improvements in symptoms and overall daily functioning."
+            )
+        else:
+            research_expl = (
+                f"Clinical trials and medical guidelines for **{matched_rec.name}** demonstrate that structured first-line treatments "
+                f"recommended by doctors provide measurable improvements in symptoms, supported by scientific evidence [1]."
+            )
     elif getattr(top_s, "plain_analogy", None):
         analogy = f"{top_s.plain_analogy} [1]"
-        research_expl = f"Clinical evidence from {top_s.title} ({top_s.journal}, {top_s.year}) demonstrates that structured medical treatments recommended by guidelines provide measurable improvements in symptoms, supported by {top_s.evidence_level.value} scientific evidence [1]."
+        ev_label = top_s.evidence_level.value if hasattr(top_s.evidence_level, 'value') else str(top_s.evidence_level)
+        research_expl = f"Clinical evidence from {top_s.title} ({top_s.journal}, {top_s.year}) demonstrates that structured medical treatments recommended by guidelines provide measurable improvements in symptoms, supported by {ev_label} scientific evidence [1]."
     elif any(k in q_low for k in ["covid", "paxlovid", "nirmatrelvir", "antiviral", "sars-cov-2"]):
         analogy = "When the virus enters human cells, it acts like an unauthorized photocopier making millions of copies of itself. Modern antiviral medicines act like putting a physical lock or paper jam on that photocopier, stopping the virus from multiplying so your immune system can quickly clear the infection [1]."
         research_expl = "In major clinical trials involving over 2,200 high-risk patients, starting antiviral treatment within the first 5 days of symptoms reduced hospital visits and severe illness by 89% compared to patients who did not receive treatment [1]. Doctors recommend starting early because stopping the virus quickly gives your body the best opportunity to recover smoothly."
@@ -1055,46 +1302,206 @@ def generate_patient_synthesis(
         analogy = "Brain cells communicate mood across tiny microscopic gaps using messengers like serotonin. Supportive therapies and medications help keep these calming chemical messengers available longer, strengthening natural pathways that support emotional balance [1]."
         research_expl = "Comprehensive research reviews tracking over 14,000 participants show that combining evidence-based psychotherapy (such as Cognitive Behavioral Therapy) with first-line medications provides the highest rate of long-term symptom relief and significantly lowers the chance of symptoms returning [1]."
     else:
-        analogy = f"Medical evidence shows that this condition affects how body tissues function, and guideline-directed treatments work directly at the biological target to protect vital organs and improve your day-to-day comfort [1]."
-        research_expl = f"Clinical research demonstrates that structured treatments recommended by medical guidelines provide measurable improvements in symptoms, supported by scientific evidence and clinical trials [1]."
+        analogy = f"Medical research shows that {condition_name} involves specific biological changes in target cells and tissues. Guideline-directed treatments work directly at these biological pathways to restore natural balance, protect vital organs, and relieve discomfort [1]."
+        research_expl = f"Clinical research demonstrates that structured treatments recommended by medical guidelines provide measurable improvements in symptoms for {condition_name}, supported by scientific evidence and clinical trials [1]."
+
+    # Extract clean overview and everyday physical analogy
+    from app.services.encyclopedia_engine import encyclopedia_engine
+    
+    organ_sys = matched_rec.organ_system if matched_rec else "vital"
+    analogy_quote = encyclopedia_engine._extract_analogy(analogy)
+    if matched_rec and matched_rec.patient_plain_language:
+        raw_analogy = encyclopedia_engine._extract_analogy(matched_rec.patient_plain_language)
+        if raw_analogy and len(raw_analogy) > 20:
+            analogy_quote = raw_analogy
+
+    # Clean plain overview text (filtering out raw parenthetical text dumps)
+    clean_intro = ""
+    if matched_rec and matched_rec.patient_plain_language:
+        raw_plain = matched_rec.patient_plain_language.strip()
+        sentences = [s.strip() for s in raw_plain.split(". ") if s.strip()]
+        readable_sents = []
+        for s in sentences:
+            if "Work closely with your doctor" in s:
+                continue
+            clean_s = re.sub(r'\(.*?\)', '', s).strip()
+            if clean_s:
+                readable_sents.append(clean_s)
+        clean_intro = ". ".join(readable_sents[:2]) + "." if readable_sents else ""
+    if not clean_intro:
+        clean_intro = f"{condition_name} is a recognized medical condition affecting how your {organ_sys.lower()} system operates. With early diagnosis and consistent care, symptoms can be effectively managed to protect your quality of life."
+
+    # Signs and signals
+    signs_and_signals = ""
+    if matched_rec and matched_rec.symptoms:
+        sym_items = []
+        for s in matched_rec.symptoms[:5]:
+            freq_label = s.frequency.title()
+            sev_label = s.severity.title()
+            desc = s.description or f"A characteristic bodily signal associated with {condition_name}."
+            sym_items.append(f"  • **{s.name.title()}** *({freq_label}, {sev_label})*: {desc}")
+        signs_and_signals = "\n\n🩺 **What Does It Feel Like? Common Signs & Signals:**\n" + "\n".join(sym_items) + " [1]\n"
+
+    # Causes and who is at risk
+    causes_section = (
+        f"\n\n🧬 **What Causes It & Who Is at Risk?**\n"
+        f"  • **Biological Susceptibility:** Microscopic stress or natural sensitivity in your {organ_sys.lower()} tissues [1].\n"
+        f"  • **Family Background & Genetics:** Inherited traits that can influence how your body balances physiological demands.\n"
+        f"  • **Daily Lifestyle Factors:** Everyday physical movement, nutrition, rest, and environmental exposures that affect long-term health.\n"
+    )
+
+    # Diagnostic journey
+    diag_section = (
+        f"\n\n🔍 **How Do Doctors Diagnose It?**\n"
+        f"  1. **Medical History & Symptom Timeline:** Reviewing when your symptoms began and what brings relief.\n"
+        f"  2. **Physical Examination:** Checking your vital signs and assessing targeted bodily areas.\n"
+        f"  3. **Objective Diagnostic Testing:** Performing standard laboratory panels or imaging scans to confirm the diagnosis and rule out look-alikes [1].\n"
+    )
+
+    icd_info = f" *(Official ICD-10 Diagnostic Code: `{matched_rec.icd10_code}`)*" if matched_rec else ""
+
+    section_1 = (
+        f"### 1. Understanding the Condition: What It Is & How It Works\n\n"
+        f"**{condition_name}**{icd_info} involves specific changes in how your body feels and functions [1].\n\n"
+        f"{clean_intro}\n\n"
+        f"> 💡 **The Everyday Analogy:** {analogy_quote}\n"
+        f"> When this bodily system is subjected to excessive pressure, inflammation, or chemical imbalance, it struggles to perform its normal tasks. Evidence-based care works like regular maintenance—easing the strain, rebalancing key fluids, and restoring smooth everyday function.\n"
+        f"{signs_and_signals}"
+        f"{causes_section}"
+        f"{diag_section}\n"
+    )
 
     # Missing context note in patient register
     patient_gap_section = ""
     if parsed_analysis.context_gaps:
-        gap_points = "\n".join([f"• 📋 **Personal Health Variable:** {g}" for g in parsed_analysis.context_gaps])
-        patient_gap_section = f"**Important Personal Health Factors:**\n{gap_points}\n\n"
+        gap_points = "\n\n".join([f"• 📋 **Personal Health Factor:** {g}" for g in parsed_analysis.context_gaps])
+        patient_gap_section = f"**Important Personal Health Factors:**\n\n{gap_points}\n\n"
 
-    answer = (
-        f"### 1. Understanding the Condition: What It Is & How It Works\n\n"
-        f"**{short_query}** involves biological changes that affect how your body feels and functions [1].\n\n"
-        f"💡 **How It Works Inside the Body:**\n{analogy}\n\n"
-        f"{patient_gap_section}"
+    # Myths and Facts
+    myths_content = ""
+    if matched_rec:
+        myths_content = "\n\n🛡️ **Common Internet Myths vs Medical Facts:**\n" + encyclopedia_engine._generate_myths_and_facts(matched_rec)
+
+    # Section 2: Detailed explanation
+    section_2 = (
         f"### 2. Detailed Medical Explanation: What Clinical Research Shows\n\n"
         f"{research_expl}\n\n"
-        f"• **Why Guideline Treatments Are Chosen:** Medical organizations analyze hundreds of clinical trials to find treatments with the highest proven benefits and the gentlest side effect profiles [1].\n"
-        f"• **What to Expect Over Time:** Most treatments take days to a few weeks to produce their full positive effects as your body's cells and tissues gradually adapt [1].\n\n"
-        f"### 3. Research-Backed Practical Solutions & Daily Care\n\n"
-        f"• **Evidence-Based Lifestyle Habits:** Clinical research consistently shows that balanced whole-food nutrition, adequate hydration, and regular gentle physical movement support your recovery [1].\n"
-        f"• **Medication Adherence:** Taking treatments at the same time every day keeps steady levels in your body, providing optimal continuous protection [1].\n"
-        f"• **Symptom Self-Monitoring:** Keeping a brief log of your daily symptoms helps your doctor tailor your treatment plan to your unique needs.\n\n"
+        f"• **Why Guideline Treatments Are Chosen:**\n"
+        f"  Medical organizations analyze hundreds of clinical trials to find treatments with the highest proven benefits and the gentlest side effect profiles [1].\n\n"
+        f"• **What to Expect Over Time:**\n"
+        f"  Most treatments take days to a few weeks to produce their full positive effects as your body's cells and tissues gradually adapt [1].\n"
+        f"{myths_content}\n\n"
+    )
+
+    # Living well guidance
+    living_well_text = (
+        f"\n\n🌱 **Living Well & Long-Term Outlook:**\n"
+        f"• **Consistency Matters:** Taking prescribed medicines regularly and keeping follow-up appointments prevents disease progression [1].\n"
+        f"• **Self-Monitoring:** Keeping track of daily numbers (like blood pressure, glucose, or symptom logs) gives you and your doctor clear data.\n"
+        f"• **Partnership with Your Care Team:** Never hesitate to mention new or unusual reactions—doses can always be adjusted.\n\n"
+    )
+
+    # Section 3: Solutions and Daily Care
+    if matched_rec and matched_rec.solutions:
+        first_lines = [s for s in matched_rec.solutions if s.line_of_therapy == "first_line"]
+        second_lines = [s for s in matched_rec.solutions if s.line_of_therapy == "second_line"]
+        lifestyles = [s for s in matched_rec.solutions if s.type == "lifestyle"]
+
+        first_line_bullets = "\n\n".join([
+            f"• **First-Line Solution ({sol.name}):**\n  - **How It Helps:** {sol.description}\n  - **Guideline Target / Recommended Protocol:** `{sol.dosage_or_protocol or 'Follow physician instructions'}` [1]\n  - **Routine Monitoring:** {sol.monitoring or 'Regular physician follow-up'}"
+            for sol in first_lines[:2]
+        ])
+        second_line_bullets = ""
+        if second_lines:
+            second_line_bullets = "\n\n" + "\n\n".join([
+                f"• **Second-Line / Backup Option ({sol.name}):**\n  - **How It Helps:** {sol.description} [2]"
+                for sol in second_lines[:1]
+            ])
+        lifestyle_bullet = ""
+        if lifestyles:
+            lifestyle_bullet = f"\n\n• **Evidence-Based Lifestyle Habits ({lifestyles[0].name}):**\n  {lifestyles[0].description} [1]"
+        else:
+            lifestyle_bullet = "\n\n• **Evidence-Based Lifestyle Habits:**\n  Balanced nutrition, adequate hydration, stress management, and physician-approved daily movement support tissue healing [1]."
+
+        section_3 = (
+            f"### 3. Research-Backed Practical Solutions & Daily Care\n\n"
+            f"{first_line_bullets}"
+            f"{second_line_bullets}"
+            f"{lifestyle_bullet}\n\n"
+            f"• **Medication Adherence:**\n  Taking treatments at the same time every day keeps steady levels in your body, providing optimal continuous protection [1].\n\n"
+            f"• **Symptom Self-Monitoring:**\n  Keeping a brief log of your daily symptoms helps your doctor tailor your treatment plan to your unique needs.\n"
+            f"{living_well_text}"
+        )
+    else:
+        section_3 = (
+            f"### 3. Research-Backed Practical Solutions & Daily Care\n\n"
+            f"• **Evidence-Based Lifestyle Habits:**\n  Clinical research consistently shows that balanced whole-food nutrition, adequate hydration, and regular gentle physical movement support your recovery [1].\n\n"
+            f"• **Medication Adherence:**\n  Taking treatments at the same time every day keeps steady levels in your body, providing optimal continuous protection [1].\n\n"
+            f"• **Symptom Self-Monitoring:**\n  Keeping a brief log of your daily symptoms helps your doctor tailor your treatment plan to your unique needs.\n"
+            f"{living_well_text}"
+        )
+
+    # Section 4: Questions to ask doctor
+    if matched_rec and matched_rec.doctor_checklist:
+        q1 = matched_rec.doctor_checklist.parameter_question or "What are my current target numbers or diagnostic biomarkers?"
+        q2 = matched_rec.doctor_checklist.safety_question or "Are there any medication side effects or safety precautions I should watch for?"
+        q3 = matched_rec.doctor_checklist.action_threshold_question or "At what specific point should I call the clinic or seek urgent care?"
+        question_bullets = f"• 💬 *\"{q1}\"*\n\n• 💬 *\"{q2}\"*\n\n• 💬 *\"{q3}\"*"
+        questions = [
+            DoctorQuestion(
+                question=q1,
+                category="Target Biomarkers & Numbers",
+                psa_type="Parameter",
+                rationale="Helps track measurable disease markers."
+            ),
+            DoctorQuestion(
+                question=q2,
+                category="Safety & Side Effects",
+                psa_type="Safety",
+                rationale="Identifies medication precautions and tolerance."
+            ),
+            DoctorQuestion(
+                question=q3,
+                category="Action Thresholds & Escalation",
+                psa_type="Action",
+                rationale="Clarifies when to contact your care team or seek acute attention."
+            ),
+        ]
+    else:
+        questions = generate_psa_doctor_questions(query, parsed_analysis, sources)
+        question_bullets = "\n\n".join([f"• 💬 *\"{q.question}\"*" for q in questions[:3]])
+
+    section_4 = (
         f"### 4. Important Questions to Ask Your Doctor\n\n"
-        f"Preparing structured questions helps you make the most of your appointments:\n"
-        f"• *What specific numbers, lab results, or health targets should we aim for with my condition?*\n"
-        f"• *What everyday habits or lifestyle adjustments will make the biggest positive difference?*\n"
-        f"• *What warning signs should prompt me to contact your office or seek care right away?*\n\n"
+        f"Preparing structured questions helps you make the most of your appointments:\n\n"
+        f"{question_bullets}\n\n"
+    )
+
+    # Section 5: Warning signs
+    if matched_rec and matched_rec.red_flags:
+        red_flag_items = "\n".join([f"• 🚨 **{rf}**" for rf in matched_rec.red_flags[:4]])
+    else:
+        red_flag_items = "• 🚨 Severe chest tightness or sudden shortness of breath\n• 🚨 Persistent severe dizziness or fainting\n• 🚨 High fever with stiff neck or sudden weakness"
+
+    section_5 = (
         f"### 5. Symptoms That Need Timely Medical Attention\n\n"
-        f"Contact your healthcare provider or visit an urgent care center if you experience warning signs such as severe chest tightness, sudden difficulty breathing, persistent dizziness, high fever, or unexpected weakness.\n\n"
+        f"Contact your healthcare provider or visit an urgent care center right away if you experience any of these warning signs:\n\n"
+        f"{red_flag_items}\n\n"
         f"***Disclaimer:** This information is synthesized from clinical guidelines for educational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always consult a qualified healthcare provider regarding any medical condition.*"
     )
 
-    jargon = [
-        JargonItem(term="Clinical Guideline", plain_english="Evidence-backed medical recommendations developed by doctor organizations to ensure safe care."),
-        JargonItem(term="Evidence Level", plain_english="A medical rating system (Oxford CEBM) that shows how strongly supported a treatment is by research."),
-        JargonItem(term="Side Effects", plain_english="Unintended body reactions to a medicine, which are usually mild, temporary, and manageable."),
-        JargonItem(term="First-Line Treatment", plain_english="The very first therapy that doctor guidelines recommend because it has the best track record.")
-    ]
+    answer = section_1 + patient_gap_section + section_2 + section_3 + section_4 + section_5
 
-    questions = generate_psa_doctor_questions(query, parsed_analysis)
+    try:
+        from app.services.jargon_engine import extract_contextual_jargon
+        jargon = extract_contextual_jargon(answer, max_items=6, query_context=query)
+    except Exception:
+        jargon = [
+            JargonItem(term="Clinical Guideline", plain_english="Evidence-backed medical recommendations developed by doctor organizations to ensure safe care."),
+            JargonItem(term="Evidence Level", plain_english="A medical rating system (Oxford CEBM) that shows how strongly supported a treatment is by research."),
+            JargonItem(term="Side Effects", plain_english="Unintended body reactions to a medicine, which are usually mild, temporary, and manageable."),
+            JargonItem(term="First-Line Treatment", plain_english="The very first therapy that doctor guidelines recommend because it has the best track record.")
+        ]
 
     return answer, jargon, questions
 
@@ -1128,25 +1535,43 @@ def generate_response(
     Strictly locks the LLM's vocabulary, statistical density, and tone to the user's active mode.
     """
     context_str = format_retrieved_context_chunks(sources)
-    _routed_system_prompt = route_prompt(user_mode, query, context_str)
+    routed_system_prompt = route_prompt(user_mode, query, context_str)
 
     if not parsed_analysis:
         parsed_analysis = parse_clinical_query(query)
 
     if user_mode == UserMode.PROFESSIONAL:
-        answer = generate_clinician_synthesis(query, sources, parsed_analysis)
+        det_answer = generate_clinician_synthesis(query, sources, parsed_analysis)
         reading_level = "Grade 16+ (Post-Graduate Clinical Literature)"
         jargon_list = None
         doctor_questions = None
         patient_sug = None
         clinician_sug = generate_clinician_suggestions(query, sources)
     else:
-        answer, jargon_list, doctor_questions = generate_patient_synthesis(query, sources, parsed_analysis)
+        det_answer, jargon_list, doctor_questions = generate_patient_synthesis(query, sources, parsed_analysis)
         reading_level = "Grade 6.0 (Plain English Health Literacy)"
         patient_sug = generate_patient_suggestions(query, sources, parsed_analysis)
         clinician_sug = None
 
-    return answer, reading_level, jargon_list, doctor_questions, patient_sug, clinician_sug
+    # Invoke active LLM provider (Google Gemini, Groq, OpenAI, Ollama)
+    final_answer = det_answer
+    try:
+        from app.services.llm_gateway import llm_gateway
+        llm_res = llm_gateway.generate(prompt=query, system_prompt=routed_system_prompt, temperature=0.15)
+        if llm_res.get("status") == "success" and llm_res.get("content"):
+            content = llm_res["content"].strip()
+            if len(content) > 250:
+                final_answer = content
+                if user_mode == UserMode.PATIENT:
+                    try:
+                        from app.services.jargon_engine import extract_contextual_jargon
+                        jargon_list = extract_contextual_jargon(final_answer, max_items=6, query_context=query)
+                    except Exception:
+                        pass
+    except Exception as e:
+        logger.warning(f"LLM generation failed or timed out: {e}. Using deterministic clinical synthesis.")
+
+    return final_answer, det_answer, reading_level, jargon_list, doctor_questions, patient_sug, clinician_sug
 
 
 def process_clinical_query(query: str, user_mode: UserMode) -> SearchResponse:
@@ -1199,6 +1624,7 @@ def process_clinical_query(query: str, user_mode: UserMode) -> SearchResponse:
     # Step 4: Stage 3 Dual-Register Synthesis via Dynamic Prompt Router
     (
         answer,
+        det_answer,
         reading_level,
         jargon_list,
         doctor_questions,
@@ -1241,7 +1667,7 @@ def process_clinical_query(query: str, user_mode: UserMode) -> SearchResponse:
         for s in sources
     ]
     crag_res = grade_retrieval_relevance(effective_query, raw_source_dicts).model_dump()
-    answer, grounding_res_obj = avoid_hallucinations(answer, raw_source_dicts)
+    answer, grounding_res_obj = avoid_hallucinations(answer, raw_source_dicts, deterministic_fallback=det_answer)
     grounding_res = grounding_res_obj.model_dump()
 
     tools_res = {}

@@ -25,8 +25,8 @@ import {
 interface IntegratedChatThreadProps {
   initialTopic: string;
   mode: UserMode;
-  response: SearchResponse;
-  activeCitation: number | null;
+  response?: SearchResponse | null;
+  activeCitation?: number | null;
   onSelectCitation: (index: number) => void;
 }
 
@@ -118,7 +118,7 @@ export function IntegratedChatThread({
 
     // Prepend initial synthesis context if this is the first follow-up turn
     const historyPayload: ChatMessage[] = [];
-    if (followupTurns.length === 0 && response.answer) {
+    if (followupTurns.length === 0 && response?.answer) {
       historyPayload.push({
         role: "user",
         content: initialTopic,
@@ -140,7 +140,7 @@ export function IntegratedChatThread({
         conversation_id: conversationId || undefined,
         audience: audience,
         history: historyPayload,
-        active_condition: initialTopic || response.query || undefined
+        active_condition: initialTopic || response?.query || undefined
       });
 
       if (res.conversation_id && !conversationId) {

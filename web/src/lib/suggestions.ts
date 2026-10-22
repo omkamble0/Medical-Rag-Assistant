@@ -4508,6 +4508,906 @@ export const HEALTH_SUGGESTIONS: SearchSuggestion[] = [
     "healthBody": "New England Journal of Medicine",
     "description": "The most common aggressive lymphoma in adults. Cancerous B-cells multiply rapidly in your lymph nodes, forming...",
     "icon": "🩸"
+  },
+  {
+    "id": "sug-doc-card-501",
+    "label": "Carbon Monoxide Poisoning (Carboxyhemoglobin Cellular Hypoxia)",
+    "category": "Emergency Medicine",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Carbon Monoxide Poisoning (Carboxyhemoglobin Cellular Hypoxia)?",
+    "healthBody": "NEJM & Undersea and Hyperbaric Medical Society (UHMS)",
+    "description": "Carbon monoxide is an invisible, odorless, tasteless gas produced by burning fuels (furnaces, heaters, car exh...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-502",
+    "label": "Acetaminophen Toxicity (NAPQI Hepatocellular Necrosis & NAC Protocol)",
+    "category": "Medical Toxicology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Acetaminophen Toxicity (NAPQI Hepatocellular Necrosis & NAC Protocol)?",
+    "healthBody": "Lancet & American Association for the Study of Liver Diseases (AASLD)",
+    "description": "Acetaminophen (Tylenol/Paracetamol) is safe at recommended doses, but an overdose overwhelms your liver's natu...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-503",
+    "label": "Toxic Alcohol Ingestion (Ethylene Glycol & Methanol Poisoning with Fomepizole)",
+    "category": "Medical Toxicology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Toxic Alcohol Ingestion (Ethylene Glycol & Methanol Poisoning with Fomepizole)?",
+    "healthBody": "NEJM & American Academy of Clinical Toxicology (AACT)",
+    "description": "Toxic alcohols like ethylene glycol (antifreeze) or methanol (windshield washer fluid) act like intoxicating a...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-504",
+    "label": "Acute Opioid Overdose & Hypoventilation (Naloxone Reversal & Airway Rescue)",
+    "category": "Emergency Medicine",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Acute Opioid Overdose & Hypoventilation (Naloxone Reversal & Airway Rescue)?",
+    "healthBody": "CDC, WHO & American Heart Association (AHA)",
+    "description": "An opioid overdose happens when drugs like prescription painkillers, heroin, or street fentanyl slow down the ...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-505",
+    "label": "Malignant Hyperthermia (RYR1 Calcium Channel Storm & Dantrolene)",
+    "category": "Anesthesiology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Malignant Hyperthermia (RYR1 Calcium Channel Storm & Dantrolene)?",
+    "healthBody": "Anesthesiology & MHAUS",
+    "description": "Malignant hyperthermia is a rare, inherited muscle gene quirk that is completely silent in everyday life, but ...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-506",
+    "label": "Serotonin Syndrome (Hunter Toxicity Criteria & Cyproheptadine)",
+    "category": "Psychiatry",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Serotonin Syndrome (Hunter Toxicity Criteria & Cyproheptadine)?",
+    "healthBody": "NEJM & Hunter Area Toxicology Service",
+    "description": "Serotonin syndrome occurs when two or more medications that raise brain serotonin are taken together (like com...",
+    "icon": "🌱"
+  },
+  {
+    "id": "sug-doc-card-507",
+    "label": "Neuroleptic Malignant Syndrome (Dopamine Blockade Hyperthermia & Bromocriptine/Dantrolene)",
+    "category": "Psychiatry",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Neuroleptic Malignant Syndrome (Dopamine Blockade Hyperthermia & Bromocriptine/Dantrolene)?",
+    "healthBody": "Lancet & American Psychiatric Association (APA)",
+    "description": "Neuroleptic Malignant Syndrome is a dangerous medical emergency that can occur in patients taking antipsychoti...",
+    "icon": "🌱"
+  },
+  {
+    "id": "sug-doc-card-508",
+    "label": "Refractory Status Epilepticus (Prolonged Seizure Activity & ESETT Protocol)",
+    "category": "Neurology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Refractory Status Epilepticus (Prolonged Seizure Activity & ESETT Protocol)?",
+    "healthBody": "NEJM & Neurocritical Care Society (NCS)",
+    "description": "Status epilepticus is a medical emergency where a seizure does not stop on its own after 5 minutes, or multipl...",
+    "icon": "🧠"
+  },
+  {
+    "id": "sug-doc-card-509",
+    "label": "Thyroid Storm (Burch-Wartofsky Point Scale & Multimodal Blockade)",
+    "category": "Endocrinology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Thyroid Storm (Burch-Wartofsky Point Scale & Multimodal Blockade)?",
+    "healthBody": "Thyroid & Endocrine Society",
+    "description": "Thyroid storm is an extreme, dangerous surge of thyroid hormone that revs up your body's engine into dangerous...",
+    "icon": "🩸"
+  },
+  {
+    "id": "sug-doc-card-510",
+    "label": "Myxedema Coma (Severe Decompensated Hypothyroidism & IV Hormone Rescue)",
+    "category": "Endocrinology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Myxedema Coma (Severe Decompensated Hypothyroidism & IV Hormone Rescue)?",
+    "healthBody": "Thyroid & Endocrine Society",
+    "description": "Myxedema coma is the most extreme, severe form of an underactive thyroid (hypothyroidism). It causes the body'...",
+    "icon": "🩸"
+  },
+  {
+    "id": "sug-doc-card-511",
+    "label": "Tension Pneumothorax (One-Way Valve Cardiopulmonary Collapse & Needle Decompression)",
+    "category": "Emergency Medicine",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Tension Pneumothorax (One-Way Valve Cardiopulmonary Collapse & Needle Decompression)?",
+    "healthBody": "American College of Surgeons (ACS) & ATLS",
+    "description": "A tension pneumothorax is an extreme breathing emergency where air leaks from a damaged lung into the chest ca...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-512",
+    "label": "Acute Cardiac Tamponade (Beck's Triad, Pulsus Paradoxus & Pericardiocentesis)",
+    "category": "Cardiology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Acute Cardiac Tamponade (Beck's Triad, Pulsus Paradoxus & Pericardiocentesis)?",
+    "healthBody": "European Heart Journal (ESC) & Circulation (AHA)",
+    "description": "Cardiac tamponade is a dangerous emergency where fluid, blood, or pus builds up inside the fibrous sac (perica...",
+    "icon": "❤️"
+  },
+  {
+    "id": "sug-doc-card-513",
+    "label": "Cauda Equina Syndrome (Acute Lumbosacral Nerve Root Compression & Urgent Decompression)",
+    "category": "Neurosurgery",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Cauda Equina Syndrome (Acute Lumbosacral Nerve Root Compression & Urgent Decompression)?",
+    "healthBody": "The Spine Journal & BASS Standards of Care",
+    "description": "Cauda equina syndrome is a major spinal cord emergency where a massive slipped disc or tumor in your lower bac...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-514",
+    "label": "Central Retinal Artery Occlusion (CRAO / Ocular Stroke & Emergent Reperfusion)",
+    "category": "Ophthalmology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Central Retinal Artery Occlusion (CRAO / Ocular Stroke & Emergent Reperfusion)?",
+    "healthBody": "Circulation (AHA/ASA) & American Academy of Ophthalmology (AAO)",
+    "description": "Central retinal artery occlusion is an 'eye stroke.' The main artery that brings fresh oxygen and blood to the...",
+    "icon": "👁️"
+  },
+  {
+    "id": "sug-doc-card-515",
+    "label": "Acute Angle-Closure Glaucoma (Pupillary Block & Emergent Pressure Reduction)",
+    "category": "Ophthalmology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Acute Angle-Closure Glaucoma (Pupillary Block & Emergent Pressure Reduction)?",
+    "healthBody": "Ophthalmology (AAO) & Cochrane Database",
+    "description": "Acute angle-closure glaucoma is a sudden, severe eye pressure emergency. The fluid inside the front of your ey...",
+    "icon": "👁️"
+  },
+  {
+    "id": "sug-doc-card-516",
+    "label": "Ludwig's Angina (Submandibular Space Phlegmon & Airway Compromise)",
+    "category": "Otolaryngology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Ludwig's Angina (Submandibular Space Phlegmon & Airway Compromise)?",
+    "healthBody": "Laryngoscope & Journal of Emergency Medicine",
+    "description": "Ludwig's angina is a dangerous, fast-moving infection under the tongue and jaw, almost always spreading from a...",
+    "icon": "👂"
+  },
+  {
+    "id": "sug-doc-card-517",
+    "label": "Necrotizing Fasciitis (Type I Polymicrobial vs Type II GAS & LRINEC Stratification)",
+    "category": "Surgery",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Necrotizing Fasciitis (Type I Polymicrobial vs Type II GAS & LRINEC Stratification)?",
+    "healthBody": "Clinical Infectious Diseases (IDSA) & Lancet Infectious Diseases",
+    "description": "Necrotizing fasciitis (often called 'flesh-eating disease') is a rapid, severe bacterial infection that spread...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-518",
+    "label": "Exertional Heat Stroke (Hyperpyrexia with Encephalopathy & Cold Water Immersion)",
+    "category": "Sports Medicine",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Exertional Heat Stroke (Hyperpyrexia with Encephalopathy & Cold Water Immersion)?",
+    "healthBody": "Medicine & Science in Sports & Exercise (ACSM) & NEJM",
+    "description": "Exertional heat stroke is a life-threatening emergency that occurs when hard exercise in the heat causes your ...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-519",
+    "label": "Posterior Reversible Encephalopathy Syndrome (PRES / Hypertensive Encephalopathy)",
+    "category": "Neurology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Posterior Reversible Encephalopathy Syndrome (PRES / Hypertensive Encephalopathy)?",
+    "healthBody": "Lancet Neurology & Neurocritical Care",
+    "description": "PRES (Posterior Reversible Encephalopathy Syndrome) is a sudden brain swelling condition triggered by an extre...",
+    "icon": "🧠"
+  },
+  {
+    "id": "sug-doc-card-520",
+    "label": "Acute Mesenteric Ischemia (Superior Mesenteric Artery Embolism & Early Revascularization)",
+    "category": "Vascular Surgery",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Acute Mesenteric Ischemia (Superior Mesenteric Artery Embolism & Early Revascularization)?",
+    "healthBody": "Journal of Vascular Surgery & World Journal of Emergency Surgery",
+    "description": "Acute mesenteric ischemia is a 'heart attack of the intestines.' A blood clot (often traveling from the heart ...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-521",
+    "label": "Spontaneous Bacterial Peritonitis (Cirrhotic Ascitic SBP & Cefotaxime/Albumin)",
+    "category": "Gastroenterology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Spontaneous Bacterial Peritonitis (Cirrhotic Ascitic SBP & Cefotaxime/Albumin)?",
+    "healthBody": "Hepatology (AASLD) & Journal of Hepatology (EASL)",
+    "description": "Spontaneous bacterial peritonitis (SBP) is a dangerous infection of the fluid (ascites) that builds up in the ...",
+    "icon": "🫕"
+  },
+  {
+    "id": "sug-doc-card-522",
+    "label": "Superior Vena Cava Syndrome (Malignant Thoracic Inflow Obstruction & Endovascular Stenting)",
+    "category": "Oncology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Superior Vena Cava Syndrome (Malignant Thoracic Inflow Obstruction & Endovascular Stenting)?",
+    "healthBody": "Journal of Clinical Oncology (ASCO) & CHEST",
+    "description": "Superior vena cava (SVC) syndrome occurs when the large vein that carries all the blood from your head, neck, ...",
+    "icon": "🎗️"
+  },
+  {
+    "id": "sug-doc-card-523",
+    "label": "Tumor Lysis Syndrome (Cairo-Bishop Criteria & Rasburicase Hyperuricemia Prophylaxis)",
+    "category": "Hematology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Tumor Lysis Syndrome (Cairo-Bishop Criteria & Rasburicase Hyperuricemia Prophylaxis)?",
+    "healthBody": "Journal of Clinical Oncology (ASCO) & British Journal of Haematology",
+    "description": "Tumor lysis syndrome is a dangerous complication that can happen when powerful chemotherapy attacks cancer cel...",
+    "icon": "🩸"
+  },
+  {
+    "id": "sug-doc-card-524",
+    "label": "Thrombotic Thrombocytopenic Purpura (ADAMTS13 Deficiency & Emergent Plasma Exchange)",
+    "category": "Hematology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Thrombotic Thrombocytopenic Purpura (ADAMTS13 Deficiency & Emergent Plasma Exchange)?",
+    "healthBody": "NEJM & Journal of Thrombosis and Haemostasis (ISTH)",
+    "description": "Thrombotic thrombocytopenic purpura (TTP) is a severe, rare blood disorder where tiny microscopic blood clots ...",
+    "icon": "🩸"
+  },
+  {
+    "id": "sug-doc-card-525",
+    "label": "Hepatorenal Syndrome (HRS-AKI & Terlipressin/Albumin Reversal)",
+    "category": "Nephrology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Hepatorenal Syndrome (HRS-AKI & Terlipressin/Albumin Reversal)?",
+    "healthBody": "NEJM & Journal of Hepatology (EASL/ICA)",
+    "description": "Hepatorenal syndrome is a severe form of kidney failure that happens in people with advanced liver cirrhosis. ...",
+    "icon": "💧"
+  },
+  {
+    "id": "sug-doc-card-526",
+    "label": "Hepatic Encephalopathy (West Haven Neuropsychiatric Staging & Lactulose/Rifaximin)",
+    "category": "Gastroenterology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Hepatic Encephalopathy (West Haven Neuropsychiatric Staging & Lactulose/Rifaximin)?",
+    "healthBody": "NEJM & Hepatology (AASLD/EASL)",
+    "description": "Hepatic encephalopathy is a reversible brain fog and confusion caused by advanced liver disease. When the live...",
+    "icon": "🫕"
+  },
+  {
+    "id": "sug-doc-card-527",
+    "label": "Pheochromocytoma Paraganglioma Crisis (Catecholamine Storm & Alpha-Before-Beta Blockade)",
+    "category": "Endocrinology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Pheochromocytoma Paraganglioma Crisis (Catecholamine Storm & Alpha-Before-Beta Blockade)?",
+    "healthBody": "Journal of Clinical Endocrinology & Metabolism (JCEM) & Endocrine Society",
+    "description": "A pheochromocytoma is a rare tumor of the adrenal gland (sitting like a cap on top of your kidney) that acts l...",
+    "icon": "🩸"
+  },
+  {
+    "id": "sug-doc-card-528",
+    "label": "Acromegaly (Growth Hormone Pituitary Adenoma & Somatostatin Receptor Ligands)",
+    "category": "Endocrinology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Acromegaly (Growth Hormone Pituitary Adenoma & Somatostatin Receptor Ligands)?",
+    "healthBody": "Journal of Clinical Endocrinology & Metabolism (JCEM) & Endocrine Society",
+    "description": "Acromegaly is a condition where a non-cancerous benign tumor on the pituitary gland at the base of your brain ...",
+    "icon": "🩸"
+  },
+  {
+    "id": "sug-doc-card-529",
+    "label": "Cushing's Disease (ACTH-Secreting Pituitary Adenoma & Endocrine Surgery)",
+    "category": "Endocrinology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Cushing's Disease (ACTH-Secreting Pituitary Adenoma & Endocrine Surgery)?",
+    "healthBody": "Journal of Clinical Endocrinology & Metabolism (JCEM) & Endocrine Society",
+    "description": "Cushing's disease is caused by a tiny, non-cancerous growth on the pituitary gland in your brain that produces...",
+    "icon": "🩸"
+  },
+  {
+    "id": "sug-doc-card-530",
+    "label": "Wilson's Disease (ATP7B Hepatolenticular Copper Accumulation & Chelator Therapy)",
+    "category": "Hepatology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Wilson's Disease (ATP7B Hepatolenticular Copper Accumulation & Chelator Therapy)?",
+    "healthBody": "Hepatology (AASLD) & Journal of Hepatology (EASL)",
+    "description": "Wilson's disease is an inherited genetic condition where your liver cannot get rid of excess copper from the f...",
+    "icon": "🫕"
+  },
+  {
+    "id": "sug-doc-card-531",
+    "label": "Hereditary Hemochromatosis (HFE C282Y Homozygosity & Therapeutic Phlebotomy)",
+    "category": "Hematology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Hereditary Hemochromatosis (HFE C282Y Homozygosity & Therapeutic Phlebotomy)?",
+    "healthBody": "Hepatology (AASLD) & Journal of Hepatology (EASL)",
+    "description": "Hereditary hemochromatosis is an inherited 'iron overload' disorder. Because of a common genetic variation (th...",
+    "icon": "🩸"
+  },
+  {
+    "id": "sug-doc-card-532",
+    "label": "Transthyretin Amyloid Cardiomyopathy (ATTR-CM & Tafamidis Amyloid Stabilization)",
+    "category": "Cardiology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Transthyretin Amyloid Cardiomyopathy (ATTR-CM & Tafamidis Amyloid Stabilization)?",
+    "healthBody": "NEJM & Journal of the American College of Cardiology (JACC)",
+    "description": "Transthyretin amyloid cardiomyopathy (ATTR-CM) is a type of heart failure where a liver protein called transth...",
+    "icon": "❤️"
+  },
+  {
+    "id": "sug-doc-card-533",
+    "label": "AL Light-Chain Amyloidosis (Plasma Cell Dyscrasia & Dara-CyBorD Immunotherapy)",
+    "category": "Hematology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for AL Light-Chain Amyloidosis (Plasma Cell Dyscrasia & Dara-CyBorD Immunotherapy)?",
+    "healthBody": "NEJM & Blood (ASH)",
+    "description": "AL amyloidosis is a rare, serious condition where a small cluster of abnormal cells in your bone marrow produc...",
+    "icon": "🩸"
+  },
+  {
+    "id": "sug-doc-card-534",
+    "label": "Fabry Disease (GLA Alpha-Galactosidase A Deficiency & Enzyme Replacement Therapy)",
+    "category": "Genetics",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Fabry Disease (GLA Alpha-Galactosidase A Deficiency & Enzyme Replacement Therapy)?",
+    "healthBody": "Lancet & European Heart Journal",
+    "description": "Fabry disease is a rare genetic condition where your cells lack an essential lysosomal enzyme (alpha-galactosi...",
+    "icon": "🧬"
+  },
+  {
+    "id": "sug-doc-card-535",
+    "label": "Gaucher Disease Type 1 (GBA Glucocerebrosidase Deficiency & ERT/SRT)",
+    "category": "Hematology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Gaucher Disease Type 1 (GBA Glucocerebrosidase Deficiency & ERT/SRT)?",
+    "healthBody": "Lancet & Blood (ASH)",
+    "description": "Gaucher disease is an inherited genetic condition where your cells lack an essential enzyme (glucocerebrosidas...",
+    "icon": "🩸"
+  },
+  {
+    "id": "sug-doc-card-536",
+    "label": "Guillain-Barré Syndrome (AIDP / Miller Fisher Syndrome & IVIG/Plasma Exchange)",
+    "category": "Neurology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Guillain-Barré Syndrome (AIDP / Miller Fisher Syndrome & IVIG/Plasma Exchange)?",
+    "healthBody": "Lancet Neurology & Cochrane Database",
+    "description": "Guillain-Barré syndrome is a rare, sudden autoimmune condition where your immune system mistakenly attacks you...",
+    "icon": "🧠"
+  },
+  {
+    "id": "sug-doc-card-537",
+    "label": "Amyotrophic Lateral Sclerosis (Motor Neuron Degeneration & Riluzole/Edaravone)",
+    "category": "Neurology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Amyotrophic Lateral Sclerosis (Motor Neuron Degeneration & Riluzole/Edaravone)?",
+    "healthBody": "Lancet & Neurology (AAN)",
+    "description": "Amyotrophic lateral sclerosis (ALS, often called Lou Gehrig's disease) is a progressive nervous system conditi...",
+    "icon": "🧠"
+  },
+  {
+    "id": "sug-doc-card-538",
+    "label": "Idiopathic Intracranial Hypertension (Pseudotumor Cerebri & Acetazolamide/Weight Loss)",
+    "category": "Neurology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Idiopathic Intracranial Hypertension (Pseudotumor Cerebri & Acetazolamide/Weight Loss)?",
+    "healthBody": "JAMA & American Academy of Neurology (AAN)",
+    "description": "Idiopathic intracranial hypertension (often called pseudotumor cerebri, meaning 'false brain tumor') is a cond...",
+    "icon": "🧠"
+  },
+  {
+    "id": "sug-doc-card-539",
+    "label": "Trigeminal Neuralgia (Tic Douloureux & Carbamazepine / Microvascular Decompression)",
+    "category": "Neurology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Trigeminal Neuralgia (Tic Douloureux & Carbamazepine / Microvascular Decompression)?",
+    "healthBody": "Neurology (AAN) & European Journal of Neurology",
+    "description": "Trigeminal neuralgia is an agonizing nerve pain condition often described as one of the most intense pains kno...",
+    "icon": "🧠"
+  },
+  {
+    "id": "sug-doc-card-540",
+    "label": "Polymyalgia Rheumatica (GCA Spectrum & Low-Dose Glucocorticoid Response)",
+    "category": "Rheumatology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Polymyalgia Rheumatica (GCA Spectrum & Low-Dose Glucocorticoid Response)?",
+    "healthBody": "Annals of the Rheumatic Diseases & Arthritis & Rheumatology (ACR/EULAR)",
+    "description": "Polymyalgia rheumatica (PMR) is an inflammatory condition that affects adults over age 50, causing severe stif...",
+    "icon": "🤲"
+  },
+  {
+    "id": "sug-doc-card-541",
+    "label": "Granulomatosis with Polyangiitis (GPA / Wegener's ANCA Vasculitis & Rituximab)",
+    "category": "Rheumatology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Granulomatosis with Polyangiitis (GPA / Wegener's ANCA Vasculitis & Rituximab)?",
+    "healthBody": "NEJM & Arthritis & Rheumatology (ACR/EULAR)",
+    "description": "Granulomatosis with polyangiitis (GPA, formerly Wegener's) is a rare autoimmune disease where your immune syst...",
+    "icon": "🤲"
+  },
+  {
+    "id": "sug-doc-card-542",
+    "label": "IgA Vasculitis (Henoch-Schönlein Purpura & Palpable Purpura Nephritis)",
+    "category": "Pediatrics",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for IgA Vasculitis (Henoch-Schönlein Purpura & Palpable Purpura Nephritis)?",
+    "healthBody": "Annals of the Rheumatic Diseases & Cochrane Database",
+    "description": "IgA vasculitis (historically called Henoch-Schönlein purpura or HSP) is the most common blood vessel inflammat...",
+    "icon": "🧸"
+  },
+  {
+    "id": "sug-doc-card-543",
+    "label": "Kawasaki Disease (Pediatric Coronary Aneurysm Prevention & High-Dose IVIG/Aspirin)",
+    "category": "Pediatrics",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Kawasaki Disease (Pediatric Coronary Aneurysm Prevention & High-Dose IVIG/Aspirin)?",
+    "healthBody": "Circulation (AHA) & Pediatrics (AAP)",
+    "description": "Kawasaki disease is an acute childhood illness that causes widespread inflammation in blood vessels throughout...",
+    "icon": "🧸"
+  },
+  {
+    "id": "sug-doc-card-544",
+    "label": "Multisystem Inflammatory Syndrome in Children (MIS-C Post-COVID Hyperinflammation)",
+    "category": "Pediatrics",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Multisystem Inflammatory Syndrome in Children (MIS-C Post-COVID Hyperinflammation)?",
+    "healthBody": "Arthritis & Rheumatology (ACR) & NEJM",
+    "description": "MIS-C (Multisystem Inflammatory Syndrome in Children) is a rare, severe condition that can develop in children...",
+    "icon": "🧸"
+  },
+  {
+    "id": "sug-doc-card-545",
+    "label": "Acute Rheumatic Fever (Jones Diagnostic Criteria & Secondary Penicillin Prophylaxis)",
+    "category": "Pediatric Cardiology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Acute Rheumatic Fever (Jones Diagnostic Criteria & Secondary Penicillin Prophylaxis)?",
+    "healthBody": "Circulation (AHA) & World Health Organization (WHO)",
+    "description": "Acute rheumatic fever is an inflammatory disease that can develop 2 to 4 weeks after an untreated strep throat...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-546",
+    "label": "Hypertrophic Pyloric Stenosis (Infantile Projectile Non-Bilious Emesis & Pyloromyotomy)",
+    "category": "Pediatric Surgery",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Hypertrophic Pyloric Stenosis (Infantile Projectile Non-Bilious Emesis & Pyloromyotomy)?",
+    "healthBody": "Journal of Pediatric Surgery & Pediatrics (AAP)",
+    "description": "Hypertrophic pyloric stenosis is a condition in newborn infants (usually 3 to 6 weeks old) where the muscle ri...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-547",
+    "label": "Intussusception (Pediatric Bowel Telescoping & Air/Contrast Enema Reduction)",
+    "category": "Pediatric Surgery",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Intussusception (Pediatric Bowel Telescoping & Air/Contrast Enema Reduction)?",
+    "healthBody": "Radiology (ACR) & Pediatrics (AAP)",
+    "description": "Intussusception is the most common emergency bowel blockage in babies and toddlers (usually between 6 months a...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-548",
+    "label": "Biliary Atresia (Neonatal Cholestasis & Kasai Hepato-Portoenterostomy)",
+    "category": "Pediatric Surgery",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Biliary Atresia (Neonatal Cholestasis & Kasai Hepato-Portoenterostomy)?",
+    "healthBody": "Journal of Pediatric Gastroenterology and Nutrition (NASPGHAN) & Lancet",
+    "description": "Biliary atresia is a serious, rare liver condition that appears in newborn babies between 2 and 6 weeks of age...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-549",
+    "label": "Hirschsprung Disease (Congenital Aganglionic Megacolon & Pull-Through Procedure)",
+    "category": "Pediatric Surgery",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Hirschsprung Disease (Congenital Aganglionic Megacolon & Pull-Through Procedure)?",
+    "healthBody": "Journal of Pediatric Surgery & Pediatrics (AAP)",
+    "description": "Hirschsprung disease is a condition that babies are born with where the nerve cells that control the muscles o...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-550",
+    "label": "Congenital Adrenal Hyperplasia (21-Hydroxylase Deficiency & Steroid Replacement)",
+    "category": "Pediatric Endocrinology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Congenital Adrenal Hyperplasia (21-Hydroxylase Deficiency & Steroid Replacement)?",
+    "healthBody": "Journal of Clinical Endocrinology & Metabolism (JCEM) & Endocrine Society",
+    "description": "Congenital adrenal hyperplasia (CAH) is an inherited genetic condition where the adrenal glands (small glands ...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-551",
+    "label": "Acute Viral Cough & Bronchial Irritation",
+    "category": "Pulmonology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Acute Viral Cough & Bronchial Irritation?",
+    "healthBody": "CHEST & Cochrane",
+    "description": "An acute cough is your airways' natural defense reflex to expel mucus and viral particles. Nerve endings in yo...",
+    "icon": "🫁"
+  },
+  {
+    "id": "sug-doc-card-552",
+    "label": "Leg Pain & Calf Muscle Strain (Gastrocnemius / Soleus Strain)",
+    "category": "Orthopedics",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Leg Pain & Calf Muscle Strain (Gastrocnemius / Soleus Strain)?",
+    "healthBody": "BJSM & ACSM",
+    "description": "A calf strain is an overstretch or minor tear in the muscle bellies at the back of your lower leg, often felt ...",
+    "icon": "🦴"
+  },
+  {
+    "id": "sug-doc-card-553",
+    "label": "Shoulder Pain & Rotator Cuff Tendinopathy",
+    "category": "Orthopedics",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Shoulder Pain & Rotator Cuff Tendinopathy?",
+    "healthBody": "AAOS",
+    "description": "Rotator cuff pain is an ache on the outer side of your upper arm caused by irritation or micro-tearing in the ...",
+    "icon": "🦴"
+  },
+  {
+    "id": "sug-doc-card-554",
+    "label": "Minor Cut, Skin Laceration & Wound Care",
+    "category": "Emergency Medicine",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Minor Cut, Skin Laceration & Wound Care?",
+    "healthBody": "CDC, WHO & Cochrane",
+    "description": "A minor cut or scrape happens when an everyday object breaks through your skin. The most important initial ste...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-555",
+    "label": "Acute Sore Throat & Viral Pharyngitis",
+    "category": "ENT",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Acute Sore Throat & Viral Pharyngitis?",
+    "healthBody": "IDSA & NICE",
+    "description": "A sore throat is an inflammation of the back of your throat, most often caused by common cold viruses. Your th...",
+    "icon": "👂"
+  },
+  {
+    "id": "sug-doc-card-556",
+    "label": "Common Cold & Acute Viral Rhinitis",
+    "category": "Primary Care",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Common Cold & Acute Viral Rhinitis?",
+    "healthBody": "CDC & Cochrane",
+    "description": "The common cold is a mild, self-limiting viral infection that inflames the lining of your nose and throat, cau...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-557",
+    "label": "Ear Pain & Otitis Externa (Swimmer's Ear & Cerumen Impaction)",
+    "category": "Otolaryngology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Ear Pain & Otitis Externa (Swimmer's Ear & Cerumen Impaction)?",
+    "healthBody": "AAO-HNS",
+    "description": "Swimmer's ear is an infection and swelling of the outer ear canal that leads from the outside of your head dow...",
+    "icon": "👂"
+  },
+  {
+    "id": "sug-doc-card-558",
+    "label": "Dry Eye Syndrome & Ocular Surface Grittiness",
+    "category": "Ophthalmology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Dry Eye Syndrome & Ocular Surface Grittiness?",
+    "healthBody": "TFOS DEWS II & AAO",
+    "description": "Dry eye syndrome happens when your eyes either do not produce enough tears or when the tears evaporate too qui...",
+    "icon": "👁️"
+  },
+  {
+    "id": "sug-doc-card-559",
+    "label": "Acute Conjunctivitis (Pink Eye - Viral, Allergic & Bacterial)",
+    "category": "Ophthalmology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Acute Conjunctivitis (Pink Eye - Viral, Allergic & Bacterial)?",
+    "healthBody": "AAO",
+    "description": "Pink eye is an irritation or infection of the clear membrane lining your eye and inner eyelid, making the whit...",
+    "icon": "👁️"
+  },
+  {
+    "id": "sug-doc-card-560",
+    "label": "Stiff Neck & Cervical Muscle Strain",
+    "category": "Physical Medicine",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Stiff Neck & Cervical Muscle Strain?",
+    "healthBody": "Bone & Joint Decade & Cochrane",
+    "description": "A stiff neck is a spasm and tightness in the strong support muscles connecting your upper back to your skull, ...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-561",
+    "label": "Knee Pain & Patellofemoral Pain Syndrome (Runner's Knee)",
+    "category": "Orthopedics",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Knee Pain & Patellofemoral Pain Syndrome (Runner's Knee)?",
+    "healthBody": "BJSM & APTA",
+    "description": "Runner's knee is an ache around or behind your kneecap caused when the kneecap tracks slightly off-center in i...",
+    "icon": "🦴"
+  },
+  {
+    "id": "sug-doc-card-562",
+    "label": "Acute Ankle Sprain (Lateral Ligament Inversion Sprain)",
+    "category": "Emergency Medicine",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Acute Ankle Sprain (Lateral Ligament Inversion Sprain)?",
+    "healthBody": "BJSM & NATA",
+    "description": "A twisted or sprained ankle happens when your foot rolls inward, stretching or tearing the tough rubber-band-l...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-563",
+    "label": "Wrist Pain & De Quervain's Tenosynovitis",
+    "category": "Orthopedics",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Wrist Pain & De Quervain's Tenosynovitis?",
+    "healthBody": "ASSH & Cochrane",
+    "description": "De Quervain's is an inflammation of the sheath wrapping around the two tendons that lift and extend your thumb...",
+    "icon": "🦴"
+  },
+  {
+    "id": "sug-doc-card-564",
+    "label": "Acute Low Back Pain & Lumbar Muscle Strain",
+    "category": "Physical Medicine",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Acute Low Back Pain & Lumbar Muscle Strain?",
+    "healthBody": "ACP & Lancet Low Back Pain Series",
+    "description": "Acute back pain is a temporary spasm and strain in the strong muscles and ligaments supporting your lower spin...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-565",
+    "label": "Soft Tissue Contusion, Bruise & Hematoma",
+    "category": "Emergency Medicine",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Soft Tissue Contusion, Bruise & Hematoma?",
+    "healthBody": "ACSM & Red Cross",
+    "description": "A bruise is a harmless pool of blood under your skin that happens when a bump breaks tiny blood vessels beneat...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-566",
+    "label": "Minor First-Degree & Superficial Second-Degree Burn",
+    "category": "Emergency Medicine",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Minor First-Degree & Superficial Second-Degree Burn?",
+    "healthBody": "American Burn Association & WHO",
+    "description": "A minor burn happens when hot water, steam, or a hot pan touches your skin, turning it red, stinging, and some...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-567",
+    "label": "Sunburn & Acute Solar Dermatitis",
+    "category": "Dermatology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Sunburn & Acute Solar Dermatitis?",
+    "healthBody": "AAD & Skin Cancer Foundation",
+    "description": "A sunburn is a radiation burn to your skin caused by invisible ultraviolet rays from the sun, making your skin...",
+    "icon": "🧴"
+  },
+  {
+    "id": "sug-doc-card-568",
+    "label": "Insect Bites, Bee Stings & Arthropod Reactions",
+    "category": "Allergy",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Insect Bites, Bee Stings & Arthropod Reactions?",
+    "healthBody": "AAAAI & ACAAI",
+    "description": "Bug bites and bee stings happen when insects inject tiny droplets of irritating venom into your skin, creating...",
+    "icon": "🛡️"
+  },
+  {
+    "id": "sug-doc-card-569",
+    "label": "Canker Sores & Aphthous Mouth Ulcers",
+    "category": "Oral Medicine",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Canker Sores & Aphthous Mouth Ulcers?",
+    "healthBody": "ADA & Cochrane Oral Health Group",
+    "description": "Canker sores are small, painful white or yellow ulcers inside your mouth, usually on the inside of your lips, ...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-570",
+    "label": "Toothache & Dental Sensitivity (Reversible Pulpitis)",
+    "category": "Dentistry",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Toothache & Dental Sensitivity (Reversible Pulpitis)?",
+    "healthBody": "American Dental Association (ADA)",
+    "description": "A toothache usually starts when the hard outer enamel of a tooth wears down or develops a small cavity, lettin...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-571",
+    "label": "Nosebleeds (Epistaxis - Anterior Kiesselbach's Plexus)",
+    "category": "ENT",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Nosebleeds (Epistaxis - Anterior Kiesselbach's Plexus)?",
+    "healthBody": "AAO-HNS",
+    "description": "A nosebleed happens when tiny, delicate blood vessels on the front wall inside your nose crack open and bleed,...",
+    "icon": "👂"
+  },
+  {
+    "id": "sug-doc-card-572",
+    "label": "Benign Hiccups (Singultus & Diaphragmatic Spasms)",
+    "category": "Gastroenterology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Benign Hiccups (Singultus & Diaphragmatic Spasms)?",
+    "healthBody": "AAFP & British Journal of Anaesthesia",
+    "description": "Hiccups are sudden, involuntary little twitches of your diaphragm—the large breathing muscle separating your c...",
+    "icon": "🫕"
+  },
+  {
+    "id": "sug-doc-card-573",
+    "label": "Indigestion, Dyspepsia & Acid Regurgitation",
+    "category": "Gastroenterology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Indigestion, Dyspepsia & Acid Regurgitation?",
+    "healthBody": "ACG & CAG",
+    "description": "Indigestion is an uncomfortable fullness, bloating, or warm burning ache in your upper stomach right beneath y...",
+    "icon": "🫕"
+  },
+  {
+    "id": "sug-doc-card-574",
+    "label": "Intestinal Gas, Bloating & Flatulence",
+    "category": "Gastroenterology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Intestinal Gas, Bloating & Flatulence?",
+    "healthBody": "American College of Gastroenterology (ACG)",
+    "description": "Intestinal gas and bloating happen when air swallowed while eating or gases produced by friendly gut bacteria ...",
+    "icon": "🫕"
+  },
+  {
+    "id": "sug-doc-card-575",
+    "label": "Acute Viral Gastroenteritis & Stomach Flu",
+    "category": "Infectious Disease",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Acute Viral Gastroenteritis & Stomach Flu?",
+    "healthBody": "IDSA & WHO",
+    "description": "The stomach flu is a common viral bug that upsets your digestive tract, causing sudden watery diarrhea, vomiti...",
+    "icon": "🛡️"
+  },
+  {
+    "id": "sug-doc-card-576",
+    "label": "Nausea & Motion Sickness (Kinetosis)",
+    "category": "Neurology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Nausea & Motion Sickness (Kinetosis)?",
+    "healthBody": "CDC & Cochrane",
+    "description": "Motion sickness happens when your eyes, inner ear balance canals, and muscles send conflicting messages to you...",
+    "icon": "🧠"
+  },
+  {
+    "id": "sug-doc-card-577",
+    "label": "Acute Constipation & Infrequent Stool",
+    "category": "Gastroenterology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Acute Constipation & Infrequent Stool?",
+    "healthBody": "American College of Gastroenterology (ACG)",
+    "description": "Constipation means your bowel movements are happening less often than usual, or that your stools have become h...",
+    "icon": "🫕"
+  },
+  {
+    "id": "sug-doc-card-578",
+    "label": "Hemorrhoids & Perianal Discomfort (Piles)",
+    "category": "Colorectal Surgery",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Hemorrhoids & Perianal Discomfort (Piles)?",
+    "healthBody": "American Society of Colon and Rectal Surgeons (ASCRS)",
+    "description": "Hemorrhoids (often called piles) are swollen, stretched veins located in the lower rectum and anus, much like ...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-579",
+    "label": "Tension-Type Headache",
+    "category": "Neurology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Tension-Type Headache?",
+    "healthBody": "International Headache Society (IHS) & AHS",
+    "description": "A tension headache is the most common kind of everyday headache, felt as a dull, steady ache or a tight, squee...",
+    "icon": "🧠"
+  },
+  {
+    "id": "sug-doc-card-580",
+    "label": "Heat Exhaustion, Dehydration & Heat Cramps",
+    "category": "Emergency Medicine",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Heat Exhaustion, Dehydration & Heat Cramps?",
+    "healthBody": "Wilderness Medical Society & CDC",
+    "description": "Heat exhaustion happens when your body gets dangerously overheated on a hot, muggy day or during heavy outdoor...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-581",
+    "label": "Alcohol Hangover & Congener Malaise",
+    "category": "Toxicology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Alcohol Hangover & Congener Malaise?",
+    "healthBody": "Alcohol and Alcoholism & Mayo Clinic",
+    "description": "A hangover is your body's recovery process after drinking too much alcohol, causing dehydration, headache, nau...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-582",
+    "label": "Delayed Onset Muscle Soreness (DOMS)",
+    "category": "Sports Medicine",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Delayed Onset Muscle Soreness (DOMS)?",
+    "healthBody": "ACSM & BJSM",
+    "description": "DOMS is the familiar, tender muscle soreness and stiffness you feel one to two days after a strenuous workout ...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-583",
+    "label": "Friction Foot Blisters & Plantar Calluses",
+    "category": "Dermatology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Friction Foot Blisters & Plantar Calluses?",
+    "healthBody": "Wilderness Medical Society & AAPSM",
+    "description": "A friction blister is a small bubble of clear fluid that forms under the top layer of skin on your foot or hee...",
+    "icon": "🧴"
+  },
+  {
+    "id": "sug-doc-card-584",
+    "label": "Ingrown Toenail (Onychocryptosis & Paronychia)",
+    "category": "Podiatry",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Ingrown Toenail (Onychocryptosis & Paronychia)?",
+    "healthBody": "American Academy of Family Physicians (AAFP)",
+    "description": "An ingrown toenail happens when the corner or side of your toenail (usually on the big toe) curves and digs in...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-585",
+    "label": "Acute Hives & Allergic Urticaria",
+    "category": "Allergy",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Acute Hives & Allergic Urticaria?",
+    "healthBody": "EAACI & AAAAI",
+    "description": "Hives (urticaria) are raised, itchy, red or pale welts that appear suddenly on your skin, looking like mosquit...",
+    "icon": "🛡️"
+  },
+  {
+    "id": "sug-doc-card-586",
+    "label": "Allergic Contact Dermatitis & Poison Ivy",
+    "category": "Dermatology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Allergic Contact Dermatitis & Poison Ivy?",
+    "healthBody": "American Academy of Dermatology (AAD)",
+    "description": "Poison ivy is an allergic reaction to a sticky plant oil called urushiol, causing intensely itchy, red, bliste...",
+    "icon": "🧴"
+  },
+  {
+    "id": "sug-doc-card-587",
+    "label": "Chapped Lips & Angular Cheilitis",
+    "category": "Dermatology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Chapped Lips & Angular Cheilitis?",
+    "healthBody": "American Academy of Dermatology (AAD)",
+    "description": "Chapped lips happen when the delicate, thin skin on your lips dries out, flakes, and cracks in cold, windy, or...",
+    "icon": "🧴"
+  },
+  {
+    "id": "sug-doc-card-588",
+    "label": "Orthostatic Dizziness & Postural Lightheadedness",
+    "category": "Cardiology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Orthostatic Dizziness & Postural Lightheadedness?",
+    "healthBody": "ACC & AHA",
+    "description": "Postural lightheadedness is that brief, woozy feeling or graying of vision you experience when standing up too...",
+    "icon": "❤️"
+  },
+  {
+    "id": "sug-doc-card-589",
+    "label": "Lifestyle Fatigue, Burnout & Sleep Debt",
+    "category": "Sleep Medicine",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Lifestyle Fatigue, Burnout & Sleep Debt?",
+    "healthBody": "AASM & Sleep Research Society",
+    "description": "Everyday lifestyle fatigue is that drained, foggy, heavy feeling that builds up when you are not getting enoug...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-590",
+    "label": "Acute Food Poisoning (Foodborne Toxin Illness)",
+    "category": "Infectious Disease",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Acute Food Poisoning (Foodborne Toxin Illness)?",
+    "healthBody": "CDC & FDA",
+    "description": "Food poisoning happens when you eat food that was left out too long, undercooked, or handled improperly, allow...",
+    "icon": "🛡️"
+  },
+  {
+    "id": "sug-doc-card-591",
+    "label": "Jammed Finger & Stubbed Toe (Joint Sprain)",
+    "category": "Orthopedics",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Jammed Finger & Stubbed Toe (Joint Sprain)?",
+    "healthBody": "AAOS & ASSH",
+    "description": "A jammed finger or stubbed toe happens when a ball or hard object hits the tip of your finger or you kick your...",
+    "icon": "🦴"
+  },
+  {
+    "id": "sug-doc-card-592",
+    "label": "Shin Splints (Medial Tibial Stress Syndrome)",
+    "category": "Sports Medicine",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Shin Splints (Medial Tibial Stress Syndrome)?",
+    "healthBody": "BJSM & ACSM",
+    "description": "Shin splints are a throbbing, aching pain along the inner edge of your shin bone that flares up during and aft...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-593",
+    "label": "Sciatica & Lumbar Radicular Irritation",
+    "category": "Neurology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Sciatica & Lumbar Radicular Irritation?",
+    "healthBody": "NICE & NASS",
+    "description": "Sciatica is a sharp, burning, or shooting electric-like pain that starts in your lower back or buttock and tra...",
+    "icon": "🧠"
+  },
+  {
+    "id": "sug-doc-card-594",
+    "label": "Plantar Fasciitis & Morning Heel Pain",
+    "category": "Orthopedics",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Plantar Fasciitis & Morning Heel Pain?",
+    "healthBody": "APTA & AOFAS",
+    "description": "Plantar fasciitis is a sharp, stabbing ache on the bottom of your heel that feels at its worst during your ver...",
+    "icon": "🦴"
+  },
+  {
+    "id": "sug-doc-card-595",
+    "label": "Skin Splinter & Retained Superficial Foreign Body",
+    "category": "Primary Care",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Skin Splinter & Retained Superficial Foreign Body?",
+    "healthBody": "AAFP & Red Cross",
+    "description": "A splinter is a tiny sliver of wood, glass, or metal that gets poked beneath the top layer of your skin, causi...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-596",
+    "label": "Tailbone Pain & Coccydynia",
+    "category": "Physical Medicine",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Tailbone Pain & Coccydynia?",
+    "healthBody": "Spine & PM&R",
+    "description": "Tailbone pain (coccydynia) is an ache or soreness right at the very bottom of your spine between your buttocks...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-597",
+    "label": "Groin Strain & Hip Adductor Tendinopathy",
+    "category": "Sports Medicine",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Groin Strain & Hip Adductor Tendinopathy?",
+    "healthBody": "BJSM & Aspetar",
+    "description": "A groin strain is an overstretch or pull in the inner thigh muscles (adductors) that run from your pelvic bone...",
+    "icon": "🩺"
+  },
+  {
+    "id": "sug-doc-card-598",
+    "label": "Swollen Lymph Nodes (Reactive Lymphadenopathy)",
+    "category": "Infectious Disease",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Swollen Lymph Nodes (Reactive Lymphadenopathy)?",
+    "healthBody": "American Academy of Family Physicians (AAFP)",
+    "description": "Swollen lymph nodes are tender, movable little lumps under your jaw, in your neck, armpits, or groin that swel...",
+    "icon": "🛡️"
+  },
+  {
+    "id": "sug-doc-card-599",
+    "label": "Cold Sores & Oral Herpes Simplex (Recurrent Herpes Labialis)",
+    "category": "Dermatology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Cold Sores & Oral Herpes Simplex (Recurrent Herpes Labialis)?",
+    "healthBody": "Cochrane & American Academy of Dermatology",
+    "description": "A cold sore (fever blister) is a cluster of tiny, painful fluid-filled blisters that pop up on the outer edge ...",
+    "icon": "🧴"
+  },
+  {
+    "id": "sug-doc-card-600",
+    "label": "Dandruff & Scalp Seborrheic Dermatitis",
+    "category": "Dermatology",
+    "query": "What are the verified clinical guidelines and evidence-backed treatments for Dandruff & Scalp Seborrheic Dermatitis?",
+    "healthBody": "American Academy of Dermatology (AAD) & Cochrane",
+    "description": "Dandruff is a very common scalp condition that causes small white or yellowish flakes of dead skin to shed int...",
+    "icon": "🧴"
   }
 ];
 
@@ -4527,11 +5427,17 @@ export function getMatchingSuggestions(input: string, limit: number = 8): Search
     const catLower = item.category.toLowerCase();
     const bodyLower = item.healthBody.toLowerCase();
 
+    // Exact word boundary match bonus (e.g. 'cut' matches 'cut' not 'acute')
+    const wordRegex = new RegExp(`\\b${clean.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\b`, 'i');
+    if (wordRegex.test(labelLower)) score += 150;
+    if (labelLower.startsWith(clean)) score += 80;
     if (labelLower.includes(clean)) score += 60;
     if (queryLower.includes(clean)) score += 35;
 
     words.forEach((w) => {
-      if (labelLower.includes(w)) score += 25;
+      const wRegex = new RegExp(`\\b${w.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\b`, 'i');
+      if (wRegex.test(labelLower)) score += 50;
+      else if (labelLower.includes(w)) score += 25;
       if (queryLower.includes(w)) score += 15;
       if (descLower.includes(w)) score += 8;
       if (catLower.includes(w)) score += 6;

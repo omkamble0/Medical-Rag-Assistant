@@ -8,7 +8,7 @@ import { JargonGlossary } from "./jargon-tooltip";
 import { DoctorChecklist } from "./doctor-checklist";
 import {
   HeartHandshake, Sparkles, BookOpenCheck, Stethoscope, Lightbulb,
-  ShieldCheck, CheckCircle2, AlertTriangle, Activity, Apple
+  ShieldCheck, CheckCircle2, AlertTriangle, Activity, Apple, Users, HelpCircle
 } from "lucide-react";
 
 interface PatientViewProps {
@@ -105,26 +105,42 @@ export function PatientView({ response, activeCitation, onSelectCitation, onSele
               let icon = <Sparkles className="w-4 h-4 text-indigo-500" />;
               let badgeColor = "bg-indigo-50 border-indigo-200 text-indigo-900";
 
-              if (textContent.toLowerCase().includes("understanding") || textContent.toLowerCase().includes("what it is") || textContent.toLowerCase().includes("big picture")) {
+              const tLow = textContent.toLowerCase();
+              if (tLow.includes("understanding") || tLow.includes("what it is") || tLow.includes("at a glance")) {
                 icon = <HeartHandshake className="w-4 h-4 text-indigo-500" />;
                 badgeColor = "bg-indigo-50 border-indigo-200 text-indigo-900";
-              } else if (textContent.toLowerCase().includes("how it works") || textContent.toLowerCase().includes("plain english") || textContent.toLowerCase().includes("inside the body")) {
+              } else if (tLow.includes("how it works") || tLow.includes("analogy") || tLow.includes("inside the body")) {
                 icon = <Lightbulb className="w-4 h-4 text-amber-500" />;
                 badgeColor = "bg-amber-50 border-amber-200 text-amber-900";
-              } else if (textContent.toLowerCase().includes("practical") || textContent.toLowerCase().includes("solutions") || textContent.toLowerCase().includes("what you can do")) {
+              } else if (tLow.includes("what does it feel like") || tLow.includes("symptoms") || tLow.includes("signs")) {
+                icon = <Activity className="w-4 h-4 text-blue-500" />;
+                badgeColor = "bg-blue-50 border-blue-200 text-blue-900";
+              } else if (tLow.includes("causes") || tLow.includes("who is at risk")) {
+                icon = <Users className="w-4 h-4 text-purple-500" />;
+                badgeColor = "bg-purple-50 border-purple-200 text-purple-900";
+              } else if (tLow.includes("diagnose")) {
+                icon = <Stethoscope className="w-4 h-4 text-teal-500" />;
+                badgeColor = "bg-teal-50 border-teal-200 text-teal-900";
+              } else if (tLow.includes("research") || tLow.includes("explanation") || tLow.includes("clinical")) {
+                icon = <BookOpenCheck className="w-4 h-4 text-violet-500" />;
+                badgeColor = "bg-violet-50 border-violet-200 text-violet-900";
+              } else if (tLow.includes("practical") || tLow.includes("solutions") || tLow.includes("daily care")) {
                 icon = <Apple className="w-4 h-4 text-emerald-500" />;
                 badgeColor = "bg-emerald-50 border-emerald-200 text-emerald-900";
-              } else if (textContent.toLowerCase().includes("questions") || textContent.toLowerCase().includes("doctor")) {
-                icon = <Stethoscope className="w-4 h-4 text-blue-500" />;
-                badgeColor = "bg-blue-50 border-blue-200 text-blue-900";
-              } else if (textContent.toLowerCase().includes("warning") || textContent.toLowerCase().includes("attention") || textContent.toLowerCase().includes("symptoms that need")) {
+              } else if (tLow.includes("myths")) {
+                icon = <HelpCircle className="w-4 h-4 text-amber-500" />;
+                badgeColor = "bg-amber-50 border-amber-200 text-amber-900";
+              } else if (tLow.includes("questions") || tLow.includes("doctor")) {
+                icon = <HeartHandshake className="w-4 h-4 text-sky-500" />;
+                badgeColor = "bg-sky-50 border-sky-200 text-sky-900";
+              } else if (tLow.includes("warning") || tLow.includes("attention") || tLow.includes("red flags") || tLow.includes("urgent")) {
                 icon = <AlertTriangle className="w-4 h-4 text-rose-500" />;
                 badgeColor = "bg-rose-50 border-rose-200 text-rose-900";
               }
 
               return (
-                <div className={`mt-6 mb-3 p-3 rounded-xl border ${badgeColor} flex items-center gap-2.5`}>
-                  <span className="p-1 rounded-lg bg-white/80 shadow-2xs">{icon}</span>
+                <div className={`mt-6 mb-3 p-3.5 rounded-2xl border ${badgeColor} flex items-center gap-2.5 shadow-2xs`}>
+                  <span className="p-1.5 rounded-xl bg-white/90 shadow-2xs shrink-0">{icon}</span>
                   <h3 className="text-base sm:text-lg font-bold tracking-tight">
                     {children}
                   </h3>
@@ -133,29 +149,39 @@ export function PatientView({ response, activeCitation, onSelectCitation, onSele
             },
             p: ({ children }) => {
               if (typeof children === "string") {
-                return <p className="mb-4 leading-relaxed">{renderInlineCitations(children)}</p>;
+                return <p className="mb-4 leading-relaxed text-slate-700 text-sm sm:text-base">{renderInlineCitations(children)}</p>;
               }
-              return <div className="mb-4 leading-relaxed">{children}</div>;
+              return <div className="mb-4 leading-relaxed text-slate-700 text-sm sm:text-base">{children}</div>;
             },
             ul: ({ children }) => (
-              <ul className="space-y-2 mb-4 list-disc list-inside text-slate-700">
+              <ul className="space-y-3 my-4 list-disc pl-5 text-slate-700 marker:text-indigo-500">
                 {children}
               </ul>
             ),
             li: ({ children }) => (
-              <li className="leading-relaxed pl-1">
+              <li className="leading-relaxed pl-1 text-sm sm:text-base">
                 {typeof children === "string" ? renderInlineCitations(children) : children}
               </li>
             ),
             strong: ({ children }) => (
-              <strong className="font-semibold text-slate-900">
+              <strong className="font-bold text-slate-900">
                 {children}
               </strong>
             ),
             em: ({ children }) => (
-              <em className="text-slate-600 text-sm italic">
+              <em className="text-slate-600 italic">
                 {children}
               </em>
+            ),
+            blockquote: ({ children }) => (
+              <div className="my-4 p-4 rounded-2xl bg-amber-50/80 border-l-4 border-amber-500 text-amber-950 shadow-2xs text-sm sm:text-base leading-relaxed">
+                {children}
+              </div>
+            ),
+            code: ({ children }) => (
+              <code className="px-1.5 py-0.5 rounded-md bg-slate-100 text-indigo-700 font-mono text-xs font-bold border border-slate-200">
+                {children}
+              </code>
             )
           }}
         >
