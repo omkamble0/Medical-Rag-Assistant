@@ -35,6 +35,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { ClinicalCalculatorWidget } from "@/components/clinical-calculator-widget";
+import { ClinicalGovernanceAudit } from "@/components/clinical-governance-audit";
 import { IntegratedChatThread } from "@/components/integrated-chat-thread";
 import { MedicalWikiViewer } from "@/components/medical-wiki-viewer";
 
@@ -48,6 +49,7 @@ export default function Home() {
   const [result, setResult] = useState<SearchResponse | null>(null);
   const [patientResult, setPatientResult] = useState<SearchResponse | null>(null);
   const [showCalculator, setShowCalculator] = useState<boolean>(false);
+  const [showAuditGovernance, setShowAuditGovernance] = useState<boolean>(false);
   
   // Primary Workspace View: 'wiki' | 'assistant' | 'split'
   const [primaryView, setPrimaryView] = useState<"assistant" | "wiki" | "split">("wiki");
@@ -364,7 +366,10 @@ export default function Home() {
             {/* Clinical Calculator Button */}
             <button
               type="button"
-              onClick={() => setShowCalculator(!showCalculator)}
+              onClick={() => {
+                setShowCalculator(!showCalculator);
+                if (!showCalculator) setShowAuditGovernance(false);
+              }}
               className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
                 showCalculator
                   ? "bg-indigo-900 text-indigo-300 shadow-sm border border-indigo-700"
@@ -375,6 +380,24 @@ export default function Home() {
               <Calculator className="w-3.5 h-3.5 text-indigo-500" />
               <span className="hidden sm:inline">Calculators</span>
             </button>
+
+            {/* Clinical Audit & Safety Governance Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowAuditGovernance(!showAuditGovernance);
+                if (!showAuditGovernance) setShowCalculator(false);
+              }}
+              className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                showAuditGovernance
+                  ? "bg-teal-900 text-teal-300 shadow-sm border border-teal-700"
+                  : "bg-white text-slate-700 hover:text-slate-900 border border-slate-200"
+              }`}
+              title="View FDA SaMD & HIPAA Clinical Decision Support Audit Trail"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+              <span className="hidden sm:inline">Audit & Safety</span>
+            </button>
           </div>
         </div>
       </header>
@@ -383,6 +406,13 @@ export default function Home() {
       {showCalculator && (
         <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4 animate-fade-in">
           <ClinicalCalculatorWidget onClose={() => setShowCalculator(false)} />
+        </div>
+      )}
+
+      {/* Clinical Governance & SaMD Audit Trail Dashboard */}
+      {showAuditGovernance && (
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4 animate-fade-in">
+          <ClinicalGovernanceAudit onClose={() => setShowAuditGovernance(false)} />
         </div>
       )}
 

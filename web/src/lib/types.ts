@@ -512,5 +512,37 @@ export interface DoctorResearchRecommendation {
 
 export type ClinicalResearchRecommendation = PatientResearchRecommendation | DoctorResearchRecommendation;
 
+export interface ClinicalAuditEvent {
+  audit_id: string;
+  timestamp_utc: string;
+  session_id: string;
+  audience: "patient" | "doctor" | "professional";
+  query: string;
+  effective_query: string;
+  is_emergency: boolean;
+  triage_headline?: string | null;
+  retrieved_source_ids: string[];
+  evidence_levels: string[];
+  ddi_findings?: any;
+  reading_level_grade?: number | null;
+  reading_level_label?: string | null;
+  hallucination_risk_pct?: number | null;
+  grounding_score?: number | null;
+  latency_ms?: number | null;
+  system_version: string;
+}
+
+export interface ClinicalAuditSummaryMetrics {
+  total_clinical_inquiries: number;
+  emergency_interceptions: number;
+  patient_inquiries: number;
+  doctor_inquiries: number;
+  avg_patient_reading_level: number;
+  avg_grounding_score: number;
+  compliance_standard: string;
+  system_version: string;
+  audit_integrity_status: string;
+}
+
 
 

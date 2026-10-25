@@ -23,7 +23,7 @@ interface ClinicalCalculatorWidgetProps {
 }
 
 export function ClinicalCalculatorWidget({ onClose }: ClinicalCalculatorWidgetProps) {
-  const [activeTab, setActiveTab] = useState<"egfr" | "bmi" | "cha2ds2" | "ddi">("egfr");
+  const [activeTab, setActiveTab] = useState<"egfr" | "bmi" | "cha2ds2" | "curb65" | "ddi">("egfr");
 
   // eGFR inputs
   const [creatinine, setCreatinine] = useState("1.3");
@@ -45,6 +45,15 @@ export function ClinicalCalculatorWidget({ onClose }: ClinicalCalculatorWidgetPr
   const [vascular, setVascular] = useState(false);
   const [afibSex, setAfibSex] = useState<"male" | "female">("male");
   const [chaResult, setChaResult] = useState<any>(null);
+
+  // CURB-65 Pneumonia inputs
+  const [curbConfusion, setCurbConfusion] = useState(false);
+  const [curbBun, setCurbBun] = useState("18");
+  const [curbRr, setCurbRr] = useState("22");
+  const [curbSbp, setCurbSbp] = useState("115");
+  const [curbDbp, setCurbDbp] = useState("75");
+  const [curbAge, setCurbAge] = useState("68");
+  const [curbResult, setCurbResult] = useState<any>(null);
 
   // DDI inputs
   const [drugInput, setDrugInput] = useState("Paxlovid, Simvastatin");
@@ -106,6 +115,26 @@ export function ClinicalCalculatorWidget({ onClose }: ClinicalCalculatorWidgetPr
     }
   };
 
+  // Run CURB-65 calculation
+  const handleCalcCurb65 = async () => {
+    setLoading(true);
+    try {
+      const res = await calculateClinicalFormula("curb65", {
+        confusion: curbConfusion,
+        bun_mg_dl: parseFloat(curbBun) || 18,
+        rr: parseInt(curbRr) || 20,
+        sbp: parseInt(curbSbp) || 120,
+        dbp: parseInt(curbDbp) || 80,
+        age: parseInt(curbAge) || 65
+      });
+      setCurbResult(res);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Run DDI check
   const handleCheckDdi = async () => {
     setLoading(true);
@@ -133,7 +162,7 @@ export function ClinicalCalculatorWidget({ onClose }: ClinicalCalculatorWidgetPr
               Medical Calculators & Safety Checks
             </h3>
             <p className="text-xs text-slate-500">
-              Kidney function (eGFR), BMI staging, stroke risk assessment, and medicine interaction checks
+              Kidney function (eGFR), BMI, stroke risk (CHA2DS2-VASc), pneumonia severity (CURB-65), & drug interaction checks
             </p>
           </div>
         </div>
@@ -175,6 +204,16 @@ export function ClinicalCalculatorWidget({ onClose }: ClinicalCalculatorWidgetPr
           }`}
         >
           Stroke Risk (AFib)
+        </button>
+        <button
+          onClick={() => setActiveTab("curb65")}
+          className={`text-xs px-3.5 py-1.5 rounded-xl font-medium transition-all ${
+            activeTab === "curb65"
+              ? "bg-indigo-600 text-white shadow-sm"
+              : "bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200"
+          }`}
+        >
+          Pneumonia (CURB-65)
         </button>
         <button
           onClick={() => setActiveTab("ddi")}
@@ -371,7 +410,129 @@ export function ClinicalCalculatorWidget({ onClose }: ClinicalCalculatorWidgetPr
         </div>
       )}
 
-      {/* Tab 4: DDI */}
+      {/* Tab 4: CURB-65 Pneumonia Severity Score */}
+      {activeTab === "curb65" && (
+        <div className="mt-5 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+            <label className="flex items-center gap-2 cursor-pointer p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-200">
+              <input
+                type="checkbox"
+                checked={curbConfusion}
+                onChange={e => setCurbConfusion(e.target.checked)}
+                className="rounded accent-indigo-600 w-4 h-4"
+              />
+              <div>
+                <span className="font-semibold block text-white">Confusion (C) (+1)</span>
+                <span className="text-[11px] text-slate-400">AMTS &le; 8 or acute disorientation</span>
+              </div>
+            </label>
+
+            <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+              <label className="text-[11px] text-slate-400 block mb-1 font-medium">BUN &gt; 19 mg/dL (U) (+1)</label>
+              <input
+                type="number"
+                placeholder="BUN (mg/dL)"
+                value={curbBun}
+                onChange={e => setCurbBun(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+              <label className="text-[11px] text-slate-400 block mb-1 font-medium">Resp Rate &ge; 30/min (R) (+1)</label>
+              <input
+                type="number"
+                placeholder="Breaths/min"
+                value={curbRr}
+                onChange={e => setCurbRr(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+              <label className="text-[11px] text-slate-400 block mb-1 font-medium">Systolic BP &lt; 90 (B) (+1)</label>
+              <input
+                type="number"
+                placeholder="SBP (mmHg)"
+                value={curbSbp}
+                onChange={e => setCurbSbp(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+              <label className="text-[11px] text-slate-400 block mb-1 font-medium">Diastolic BP &le; 60 (B) (+1)</label>
+              <input
+                type="number"
+                placeholder="DBP (mmHg)"
+                value={curbDbp}
+                onChange={e => setCurbDbp(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+              <label className="text-[11px] text-slate-400 block mb-1 font-medium">Age &ge; 65 Years (65) (+1)</label>
+              <input
+                type="number"
+                placeholder="Age"
+                value={curbAge}
+                onChange={e => setCurbAge(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={handleCalcCurb65}
+            disabled={loading}
+            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-2 transition-colors"
+          >
+            <Activity className="w-4 h-4" />
+            Compute CURB-65 Pneumonia Severity
+          </button>
+
+          {curbResult && (
+            <div className="p-4 rounded-xl bg-slate-900/90 border border-indigo-500/30 space-y-2 mt-3 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-300 font-medium">CURB-65 Score:</span>
+                <span className="text-base font-bold text-indigo-400 font-mono">
+                  {curbResult.score} / 5 Points
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                  curbResult.score >= 3
+                    ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+                    : curbResult.score === 2
+                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                    : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                }`}>
+                  {curbResult.risk_group}
+                </span>
+                <span className="text-slate-400">
+                  Predicted 30-Day Mortality: <strong className="text-white font-mono">{curbResult.mortality_30_day_pct}%</strong>
+                </span>
+              </div>
+              <p className="text-emerald-300/95 leading-relaxed font-medium">
+                Clinical Guidance: {curbResult.recommendation}
+              </p>
+              {curbResult.criteria_met && curbResult.criteria_met.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-slate-800">
+                  <span className="text-slate-400 font-semibold block mb-1">Criteria Triggered:</span>
+                  <ul className="list-disc list-inside space-y-0.5 text-slate-300">
+                    {curbResult.criteria_met.map((item: string, i: number) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab 5: DDI */}
       {activeTab === "ddi" && (
         <div className="mt-5 space-y-4">
           <div>

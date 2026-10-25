@@ -1,7 +1,8 @@
 import {
   SearchResponse, UserMode, PatientSuggestion, ClinicianSuggestion,
   ParsedQueryAnalysis, DoctorQuestion, ChatRequest, ChatResponse, ChatMessage,
-  ClinicalResearchRecommendation, PatientResearchRecommendation, DoctorResearchRecommendation
+  ClinicalResearchRecommendation, PatientResearchRecommendation, DoctorResearchRecommendation,
+  ClinicalAuditEvent, ClinicalAuditSummaryMetrics
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
@@ -1142,6 +1143,36 @@ export async function fetchClinicalResearchRecommendations(
   return await res.json();
 }
 
+/**
+ * Retrieves historical SaMD / HIPAA clinical audit trail events.
+ */
+export async function fetchAuditLogs(params?: {
+  limit?: number;
+  sessionId?: string;
+  audience?: string;
+  emergencyOnly?: boolean;
+}): Promise<{ status: string; count: number; audit_trail: ClinicalAuditEvent[] }> {
+  const queryParts: string[] = [];
+  if (params?.limit) queryParts.push(`limit=${encodeURIComponent(params.limit)}`);
+  if (params?.sessionId) queryParts.push(`session_id=${encodeURIComponent(params.sessionId)}`);
+  if (params?.audience) queryParts.push(`audience=${encodeURIComponent(params.audience)}`);
+  if (params?.emergencyOnly) queryParts.push(`emergency_only=true`);
 
+  const qs = queryParts.length ? `?${queryParts.join("&")}` : "";
+  const res = await fetch(`${API_BASE_URL}/audit/logs${qs}`);
+  if (!res.ok) {
+    throw new Error(`Failed to retrieve audit trail (${res.status})`);
+  }
+  return await res.json();
+}
 
-
+/**
+ * Retrieves summary metrics for clinical safety, grounding, and reading grade posture.
+ */
+export async function fetchAuditMetrics(): Promise<{ status: string; metrics: ClinicalAuditSummaryMetrics }> {
+  const res = await fetch(`${API_BASE_URL}/audit/metrics`);
+  if (!res.ok) {
+    throw new Error(`Failed to retrieve audit summary metrics (${res.status})`);
+  }
+  return await res.json();
+}
