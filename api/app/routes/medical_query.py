@@ -122,6 +122,10 @@ async def medical_query_endpoint(payload: QueryRequest):
             triage_alert = None
             provider_name = response.get("provider", "Clinical RAG Agent")
 
+        from app.core.readability import enforce_audience_contract
+        answer_text, aud_audit = enforce_audience_contract(answer_text, normalized_audience)
+        reading_level_str = aud_audit.get("reading_level_label", "Grade 6.0 - Everyday English" if normalized_audience == "patient" else "Postgraduate Clinical Level")
+
         return {
             "status": "ok",
             "original_query": payload.query,
@@ -130,13 +134,14 @@ async def medical_query_endpoint(payload: QueryRequest):
             "answer": answer_text,
             "sources": formatted_sources,
             "audience": normalized_audience,  # NORMALIZED: always 'patient' or 'doctor'
-            "reading_level": "Grade 6.0 - Everyday English" if normalized_audience == "patient" else "Postgraduate Clinical Level",
+            "reading_level": reading_level_str,
             "provider": provider_name,
             "execution_trace": trace,
             "tool_results": tool_results,
             "crag_grade": crag_grade,
             "grounding_audit": grounding_audit,
-            "triage_alert": triage_alert
+            "triage_alert": triage_alert,
+            "audience_audit": aud_audit
         }
     except Exception as e:
         raise HTTPException(

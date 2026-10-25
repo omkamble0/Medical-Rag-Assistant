@@ -17,6 +17,7 @@ from typing import TypedDict, List, Dict, Any, Optional
 from langgraph.graph import StateGraph, END
 from app.core.guardrails import evaluate_safety_guardrails
 from app.core.prompts import MANDATORY_DISCLAIMER, normalize_audience, route_prompt
+from app.core.readability import enforce_audience_contract
 from app.services.crag.query_rewriter import rewrite_clinical_query, ClinicalQueryDecomposition
 from app.services.crag.retrieval_grader import grade_retrieval_relevance, RetrievalGradeResult
 from app.services.crag.reranker import rerank_evidence_documents
@@ -346,6 +347,10 @@ def node_audience_synthesis(state: AgenticWorkflowState) -> AgenticWorkflowState
     if MANDATORY_DISCLAIMER not in raw_answer:
         raw_answer += f"\n\n---\n{MANDATORY_DISCLAIMER}"
 
+    # Strict audience enforcement: sanitize statistical leaks in patient mode, compute reading level
+    raw_answer, aud_audit = enforce_audience_contract(raw_answer, audience)
+    reading_level_label = aud_audit.get("reading_level_label", "Grade 6.0 (Everyday English)" if audience == "patient" else "Postgraduate Clinical Register")
+
     state["generated_answer"] = raw_answer
 
     _add_trace_step(
@@ -357,7 +362,8 @@ def node_audience_synthesis(state: AgenticWorkflowState) -> AgenticWorkflowState
             "provider": gateway_result.get("provider"),
             "model": gateway_result.get("model"),
             "audience": audience,
-            "reading_level": "Grade 6.0 (Everyday English)" if audience == "patient" else "Postgraduate Clinical Register"
+            "reading_level": reading_level_label,
+            "audience_audit": aud_audit
         }
     )
     return state

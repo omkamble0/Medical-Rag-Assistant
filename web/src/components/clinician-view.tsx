@@ -9,6 +9,7 @@ import {
   Layers, FlaskConical, GitCompare, AlertOctagon
 } from "lucide-react";
 import { AgentTraceViewer } from "@/components/agent-trace-viewer";
+import { ResearchRecommendationDeck } from "./research-recommendation-deck";
 
 interface ClinicianViewProps {
   response: SearchResponse;
@@ -142,6 +143,13 @@ export function ClinicianView({ response, activeCitation, onSelectCitation, onSe
           {response.answer}
         </ReactMarkdown>
       </div>
+
+      {/* Dynamic Evidence-Backed Clinical Research & Trial Recommendations */}
+      <ResearchRecommendationDeck
+        condition={response.query_analysis?.entities?.primary_condition || response.query}
+        userMode="professional"
+        onSelectCitation={onSelectCitation}
+      />
 
       {/* Structured Clinician Suggestions (Subgroups, Titration, Guidelines, Contraindications) */}
       {response.clinician_suggestions && (

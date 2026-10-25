@@ -4,8 +4,9 @@ Fetches Oxford CEBM Level 1 & 2 clinical papers directly from NCBI E-Utilities &
 """
 
 import re
+import time
 import xml.etree.ElementTree as ET
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 import httpx
 from app.models.enums import EvidenceLevel
 from app.models.schemas import SourceDocument
@@ -13,6 +14,9 @@ from app.models.schemas import SourceDocument
 NCBI_ESEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 NCBI_EFETCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 EUROPE_PMC_URL = "https://www.ebi.ac.uk/europepmc/webservices/rest/search"
+
+# Thread-safe persistent query cache with 24-hour TTL (query -> (timestamp, docs))
+_PUBMED_CACHE: Dict[str, Tuple[float, List[Dict[str, Any]]]] = {}
 
 DOMAIN_MAP = {
     "CARDIOVASCULAR": [
@@ -199,12 +203,117 @@ class PubMedImporter:
                         if fetch_resp.status_code == 200:
                             parsed = self._parse_pubmed_xml(fetch_resp.text, disease_name)
                             if parsed:
+                                _PUBMED_CACHE[disease_name.strip().lower()] = (time.time(), parsed)
                                 return parsed
         except Exception:
             pass
 
         # Fallback to local curated evidence store
-        return self._get_fallback_evidence(disease_name, max_results)
+        fb = self._get_fallback_evidence(disease_name, max_results)
+        _PUBMED_CACHE[disease_name.strip().lower()] = (time.time(), fb)
+        return fb
+
+    def _search_europe_pmc_sync(self, query: str, max_results: int = 5) -> List[Dict[str, Any]]:
+        """Queries Europe PMC REST API synchronously for meta-analyses, RCTs, and clinical guidelines."""
+        try:
+            params = {
+                "query": f'"{query}" (SRC:MED) AND (HAS_ABSTRACT:Y) AND (PUB_TYPE:"Randomized Controlled Trial" OR PUB_TYPE:"Meta-Analysis" OR PUB_TYPE:"Systematic Review" OR PUB_TYPE:"Guideline")',
+                "format": "json",
+                "pageSize": str(max_results),
+                "resultType": "core"
+            }
+            with httpx.Client(timeout=4.0) as client:
+                resp = client.get(EUROPE_PMC_URL, params=params)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    results_list = data.get("resultList", {}).get("result", [])
+                    docs = []
+                    for idx, item in enumerate(results_list, 1):
+                        title = item.get("title", f"{query} Clinical Study")
+                        journal = item.get("journalTitle", "Peer-Reviewed Medical Journal")
+                        pub_year = 2023
+                        try:
+                            pub_year = int(item.get("pubYear", 2023))
+                        except Exception:
+                            pass
+                        doi = item.get("doi") or f"PMID:{item.get('pmid', '')}"
+                        abstract = item.get("abstractText", "")
+                        pub_types = item.get("pubTypeList", {}).get("pubType", [])
+                        level = determine_cebm_level(pub_types, abstract or title)
+                        docs.append({
+                            "id": f"PMC-{item.get('id', idx)}",
+                            "pmid": item.get("pmid", ""),
+                            "doi_or_pmid": doi,
+                            "title": title,
+                            "journal": journal,
+                            "year": pub_year,
+                            "evidence_level": level,
+                            "snippet": abstract[:350] or f"Peer-reviewed clinical evidence regarding {query}.",
+                            "key_takeaway": f"Evidence-based trial finding for {query} ({journal}, {pub_year})."
+                        })
+                    if docs:
+                        return docs
+        except Exception:
+            pass
+        return []
+
+    def search_and_fetch_disease_papers_sync(
+        self,
+        disease_name: str,
+        max_results: int = 5
+    ) -> List[Dict[str, Any]]:
+        """Synchronously queries Europe PMC and PubMed with TTL caching and fallback."""
+        cache_key = disease_name.strip().lower()
+        now = time.time()
+        if cache_key in _PUBMED_CACHE:
+            cached_time, cached_docs = _PUBMED_CACHE[cache_key]
+            if now - cached_time < 86400:  # 24h cache
+                return cached_docs[:max_results]
+
+        # 1. Try Europe PMC (Fast JSON endpoint)
+        pmc_docs = self._search_europe_pmc_sync(disease_name, max_results=max_results)
+        if pmc_docs:
+            _PUBMED_CACHE[cache_key] = (now, pmc_docs)
+            return pmc_docs
+
+        # 2. Try NCBI E-Utilities
+        try:
+            filter_terms = '("systematic review"[pt] OR "meta-analysis"[pt] OR "guideline"[pt] OR "practice guideline"[pt] OR "randomized controlled trial"[pt])'
+            query = f'("{disease_name}"[Title/Abstract]) AND {filter_terms} AND ("2018"[Date - Publication] : "3000"[Date - Publication])'
+            params = {
+                "db": "pubmed",
+                "term": query,
+                "retmode": "json",
+                "retmax": str(max_results),
+                "sort": "pub_date",
+                "tool": self.tool_name,
+                "email": self.email,
+            }
+            with httpx.Client(timeout=4.0) as client:
+                resp = client.get(NCBI_ESEARCH_URL, params=params)
+                if resp.status_code == 200:
+                    id_list = resp.json().get("esearchresult", {}).get("idlist", [])
+                    if id_list:
+                        fetch_params = {
+                            "db": "pubmed",
+                            "id": ",".join(id_list),
+                            "retmode": "xml",
+                            "tool": self.tool_name,
+                            "email": self.email,
+                        }
+                        fetch_resp = client.get(NCBI_EFETCH_URL, params=fetch_params)
+                        if fetch_resp.status_code == 200:
+                            parsed = self._parse_pubmed_xml(fetch_resp.text, disease_name)
+                            if parsed:
+                                _PUBMED_CACHE[cache_key] = (now, parsed)
+                                return parsed
+        except Exception:
+            pass
+
+        # 3. Fallback to local curated evidence store
+        fb = self._get_fallback_evidence(disease_name, max_results)
+        _PUBMED_CACHE[cache_key] = (now, fb)
+        return fb
 
     def _parse_pubmed_xml(self, xml_text: str, disease_name: str) -> List[Dict[str, Any]]:
         """Parses NCBI XML into structured AegisMed clinical documents."""
@@ -321,6 +430,9 @@ async def search_pubmed(query: str, max_results: int = 10) -> List[Dict[str, Any
 
 async def fetch_article_abstracts(query: str, max_results: int = 10) -> List[Dict[str, Any]]:
     return await pubmed_importer.search_and_fetch_disease_papers(query, max_results=max_results)
+
+def search_pubmed_sync(query: str, max_results: int = 5) -> List[Dict[str, Any]]:
+    return pubmed_importer.search_and_fetch_disease_papers_sync(query, max_results=max_results)
 
 def normalize_pubmed_result(article: Dict[str, Any]) -> Dict[str, Any]:
     return {

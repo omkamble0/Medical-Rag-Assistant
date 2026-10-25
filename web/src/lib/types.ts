@@ -464,5 +464,53 @@ export interface EncyclopediaArticle {
   last_reviewed: string;
 }
 
+export interface ResearchTrialItem {
+  citation_index: number;
+  title: string;
+  journal: string;
+  year: number;
+  doi_or_pmid?: string | null;
+  evidence_level: string;
+  key_findings: string;
+  clinical_implication: string;
+}
+
+export interface PatientResearchRecommendation {
+  status: string;
+  condition: string;
+  audience: "patient";
+  reading_level: string;
+  overview: string;
+  plain_language_findings: Array<{
+    topic: string;
+    what_it_means_for_you: string;
+    source: string;
+  }>;
+  questions_for_doctor: string[];
+  reputable_resources: string[];
+  sources: SourceDocument[];
+  disclaimer: string;
+}
+
+export interface DoctorResearchRecommendation {
+  status: string;
+  condition: string;
+  audience: "doctor";
+  reading_level: string;
+  evidence_synthesis: string;
+  key_trials_and_rcts: ResearchTrialItem[];
+  guideline_consensus: Array<{
+    guideline: string;
+    authority: string;
+    level: string;
+    recommendation: string;
+  }>;
+  contraindications_and_safety: string[];
+  sources: SourceDocument[];
+  disclaimer: string;
+}
+
+export type ClinicalResearchRecommendation = PatientResearchRecommendation | DoctorResearchRecommendation;
+
 
 

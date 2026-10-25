@@ -20,6 +20,7 @@ from app.core.prompts import (
     PATIENT_PROMPT, CLINICIAN_PROMPT, normalize_audience, MANDATORY_DISCLAIMER
 )
 from app.core.guardrails import evaluate_safety_guardrails
+from app.core.readability import enforce_audience_contract
 from app.services.medical_db import medical_db
 from app.services.llm_gateway import llm_gateway
 from app.services.crag.hallucination_grader import avoid_hallucinations
@@ -284,6 +285,9 @@ class MedicalChatEngine:
                 f"> *Red-flag indicators requiring prompt medical evaluation:* {', '.join(triage_alert.red_flag_symptoms[:3])}\n\n"
             )
             raw_answer = advisory_box + raw_answer
+
+        # Strict audience enforcement: sanitize statistical leaks in patient mode, compute reading level
+        raw_answer, aud_audit = enforce_audience_contract(raw_answer, audience)
 
         # 8. Extract Inline Citations
         citations = []

@@ -778,5 +778,36 @@ def retrieve_clinical_evidence(
             )
         )
 
+    # Dynamic Live Ingestion: Supplement with verified Clinical Guidelines & Live PubMed
+    if len(result) < top_k:
+        try:
+            from app.services.guideline_client import find_guidelines_by_condition, build_guideline_evidence_document
+            gl_matches = find_guidelines_by_condition(clean_query)
+            existing_titles = {r.title.lower() for r in result}
+            for gl in gl_matches:
+                if gl["title"].lower() not in existing_titles:
+                    doc = build_guideline_evidence_document(gl, citation_index=len(result) + 1)
+                    result.append(doc)
+                    existing_titles.add(gl["title"].lower())
+                if len(result) >= top_k:
+                    break
+        except Exception:
+            pass
+
+    if len(result) < top_k:
+        try:
+            from app.services.pubmed_client import search_pubmed_sync, build_medical_evidence_document
+            pm_matches = search_pubmed_sync(clean_query, max_results=(top_k - len(result)))
+            existing_titles = {r.title.lower() for r in result}
+            for pm in pm_matches:
+                if pm["title"].lower() not in existing_titles:
+                    doc = build_medical_evidence_document(pm, citation_index=len(result) + 1)
+                    result.append(doc)
+                    existing_titles.add(pm["title"].lower())
+                if len(result) >= top_k:
+                    break
+        except Exception:
+            pass
+
     return result
 

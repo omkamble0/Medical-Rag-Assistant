@@ -21,6 +21,7 @@ from app.core.prompts import (
     CLINICIAN_PROMPT
 )
 from app.core.evaluator import evaluate_grounding_and_confidence
+from app.core.readability import enforce_audience_contract
 from app.services.vector_store import retrieve_clinical_evidence
 from app.services.crag.retrieval_grader import grade_retrieval_relevance
 from app.services.crag.hallucination_grader import audit_hallucinations_and_grounding, avoid_hallucinations
@@ -1571,6 +1572,11 @@ def generate_response(
     except Exception as e:
         logger.warning(f"LLM generation failed or timed out: {e}. Using deterministic clinical synthesis.")
 
+    # Strict audience enforcement: sanitize statistical leaks in patient mode, compute reading level
+    aud_str = "doctor" if user_mode == UserMode.PROFESSIONAL else "patient"
+    final_answer, aud_audit = enforce_audience_contract(final_answer, aud_str)
+    reading_level = aud_audit.get("reading_level_label", reading_level)
+
     return final_answer, det_answer, reading_level, jargon_list, doctor_questions, patient_sug, clinician_sug
 
 
@@ -1669,6 +1675,11 @@ def process_clinical_query(query: str, user_mode: UserMode) -> SearchResponse:
     crag_res = grade_retrieval_relevance(effective_query, raw_source_dicts).model_dump()
     answer, grounding_res_obj = avoid_hallucinations(answer, raw_source_dicts, deterministic_fallback=det_answer)
     grounding_res = grounding_res_obj.model_dump()
+
+    # Strict audience enforcement: guarantee patient sanitization even if fallback substituted
+    aud_str = "doctor" if user_mode == UserMode.PROFESSIONAL else "patient"
+    answer, aud_audit = enforce_audience_contract(answer, aud_str)
+    reading_level = aud_audit.get("reading_level_label", reading_level)
 
     tools_res = {}
     if parsed_analysis.entities.interventions:

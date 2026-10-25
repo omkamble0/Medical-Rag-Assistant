@@ -1,6 +1,7 @@
 import {
   SearchResponse, UserMode, PatientSuggestion, ClinicianSuggestion,
-  ParsedQueryAnalysis, DoctorQuestion, ChatRequest, ChatResponse, ChatMessage
+  ParsedQueryAnalysis, DoctorQuestion, ChatRequest, ChatResponse, ChatMessage,
+  ClinicalResearchRecommendation, PatientResearchRecommendation, DoctorResearchRecommendation
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
@@ -1112,6 +1113,35 @@ export async function fetchTaxonomyStats(): Promise<{
   }
   return await res.json();
 }
+
+/**
+ * Fetches dynamic clinical research recommendations for patients or doctors
+ * grounded in real-time PubMed, Europe PMC, and clinical society consensus guidelines.
+ */
+export async function fetchClinicalResearchRecommendations(
+  condition: string,
+  audience: "patient" | "doctor" = "patient",
+  maxResults: number = 5
+): Promise<ClinicalResearchRecommendation> {
+  const res = await fetch(`${API_BASE_URL}/research-recommendations`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      condition,
+      audience,
+      max_results: maxResults
+    })
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to retrieve clinical research recommendations (${res.status})`);
+  }
+
+  return await res.json();
+}
+
 
 
 

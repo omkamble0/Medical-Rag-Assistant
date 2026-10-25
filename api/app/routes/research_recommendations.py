@@ -104,13 +104,16 @@ async def get_research_recommendations(payload: ResearchRecommendationRequest):
 
         # Step 2: Generate Audience-Specific Payload
         if norm_audience == "patient":
+            from app.core.readability import sanitize_patient_mode_text
             # Patient: Plain English, 6th-grade, no statistics, empathetic
             findings_list = []
             for s in sources:
                 takeaway = s.key_takeaway or s.snippet[:200]
+                clean_takeaway = sanitize_patient_mode_text(takeaway)
+                clean_takeaway = clean_takeaway.replace("MACE", "major heart events").replace("eGFR", "kidney filtration rate")
                 findings_list.append({
                     "topic": s.title,
-                    "what_it_means_for_you": takeaway.replace("MACE", "major heart events").replace("HR", "risk comparison").replace("eGFR", "kidney function"),
+                    "what_it_means_for_you": clean_takeaway,
                     "source": f"[{s.citation_index}] {s.journal} ({s.year})"
                 })
 

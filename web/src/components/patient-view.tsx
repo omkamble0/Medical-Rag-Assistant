@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import { SearchResponse } from "@/lib/types";
 import { JargonGlossary } from "./jargon-tooltip";
 import { DoctorChecklist } from "./doctor-checklist";
+import { ResearchRecommendationDeck } from "./research-recommendation-deck";
 import {
   HeartHandshake, Sparkles, BookOpenCheck, Stethoscope, Lightbulb,
   ShieldCheck, CheckCircle2, AlertTriangle, Activity, Apple, Users, HelpCircle
@@ -188,6 +189,13 @@ export function PatientView({ response, activeCitation, onSelectCitation, onSele
           {response.answer}
         </ReactMarkdown>
       </div>
+
+      {/* Dynamic Evidence-Backed Research Recommendations */}
+      <ResearchRecommendationDeck
+        condition={response.query_analysis?.entities?.primary_condition || response.query}
+        userMode="patient"
+        onSelectCitation={onSelectCitation}
+      />
 
       {/* Structured Patient Suggestions (Lifestyle, Doctor Questions, Monitoring) */}
       {response.patient_suggestions && (
