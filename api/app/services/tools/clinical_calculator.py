@@ -242,13 +242,67 @@ def calculate_wells_pe(
     }
 
 
+def calculate_curb65(
+    confusion: bool = False,
+    bun_over_19: bool = False,
+    rr_over_30: bool = False,
+    sbp_under_90_or_dbp_under_60: bool = False,
+    age_over_65: bool = False
+) -> Dict[str, Any]:
+    """
+    Computes CURB-65 Pneumonia Severity Score (BTS / IDSA guidance).
+    Predicts 30-day community-acquired pneumonia mortality and determines site-of-care.
+    """
+    score = 0
+    criteria = []
+
+    if confusion:
+        score += 1
+        criteria.append("Confusion (new disorientation or impaired mental test)")
+    if bun_over_19:
+        score += 1
+        criteria.append("Urea / BUN > 19 mg/dL (> 7 mmol/L)")
+    if rr_over_30:
+        score += 1
+        criteria.append("Respiratory Rate >= 30 breaths/min")
+    if sbp_under_90_or_dbp_under_60:
+        score += 1
+        criteria.append("Blood Pressure: SBP < 90 mmHg or DBP <= 60 mmHg")
+    if age_over_65:
+        score += 1
+        criteria.append("Age >= 65 years")
+
+    if score <= 1:
+        risk_group = "Low Risk (Group 1)"
+        mortality_risk = "0.7% - 2.1%"
+        action = "Outpatient management usually suitable. Oral antibiotics and home monitoring."
+    elif score == 2:
+        risk_group = "Intermediate Risk (Group 2)"
+        mortality_risk = "9.2%"
+        action = "Short inpatient hospitalization or closely supervised outpatient monitoring advised."
+    else:
+        risk_group = "High Risk / Severe Pneumonia (Group 3)"
+        mortality_risk = "14.5% - 40.0%"
+        action = "Mandatory acute hospital admission; evaluate for immediate Intensive Care Unit (ICU) admission if score >= 4."
+
+    return {
+        "calculator": "CURB-65 Pneumonia Severity Score",
+        "score": score,
+        "max_score": 5,
+        "risk_level": risk_group,
+        "estimated_30d_mortality": mortality_risk,
+        "clinical_action": action,
+        "criteria_present": criteria
+    }
+
+
 @tool
 def clinical_calculator_tool(formula: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Executes clinical calculators for eGFR, BMI, CHA2DS2-VASc, or Wells PE score.
+    Executes clinical calculators for eGFR, BMI, CHA2DS2-VASc, Wells PE, or CURB-65 score.
     Parameters:
-      formula: 'egfr', 'bmi', 'cha2ds2_vasc', or 'wells_pe'
-      parameters: dict containing relevant inputs (e.g. {'creatinine': 1.4, 'age': 65, 'sex': 'male'})
+      formula: 'egfr', 'bmi', 'cha2ds2_vasc', 'wells_pe', or 'curb65'
+      parameters: dict containing relevant inputs
     """
     f = formula.strip().lower()
     if f in ["egfr", "gfr", "kidney"]:
@@ -282,7 +336,16 @@ def clinical_calculator_tool(formula: str, parameters: Dict[str, Any]) -> Dict[s
             hemoptysis=bool(parameters.get("hemoptysis", False)),
             active_cancer=bool(parameters.get("active_cancer", False))
         )
+    elif f in ["curb65", "curb_65", "pneumonia"]:
+        age_val = int(parameters.get("age", 0))
+        return calculate_curb65(
+            confusion=bool(parameters.get("confusion", False)),
+            bun_over_19=bool(parameters.get("bun_over_19", parameters.get("urea", False))),
+            rr_over_30=bool(parameters.get("rr_over_30", False)),
+            sbp_under_90_or_dbp_under_60=bool(parameters.get("sbp_under_90_or_dbp_under_60", parameters.get("hypotension", False))),
+            age_over_65=bool(parameters.get("age_over_65", age_val >= 65))
+        )
     else:
         return {
-            "error": f"Unknown clinical calculator '{formula}'. Supported formulas: 'egfr', 'bmi', 'cha2ds2_vasc', 'wells_pe'."
+            "error": f"Unknown clinical calculator '{formula}'. Supported formulas: 'egfr', 'bmi', 'cha2ds2_vasc', 'wells_pe', 'curb65'."
         }

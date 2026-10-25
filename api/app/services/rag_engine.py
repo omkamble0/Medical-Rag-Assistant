@@ -1703,6 +1703,25 @@ def process_clinical_query(query: str, user_mode: UserMode) -> SearchResponse:
 
     latency = int((time.time() - start_time) * 1000)
 
+    try:
+        from app.core.audit_logger import clinical_audit_logger
+        clinical_audit_logger.log_clinical_event(
+            query=query,
+            effective_query=effective_query,
+            audience=user_mode.value if hasattr(user_mode, "value") else str(user_mode),
+            is_emergency=bool(triage_alert),
+            triage_headline=triage_alert.headline if triage_alert else None,
+            sources=sources,
+            ddi_findings=tools_res.get("drug_interactions"),
+            reading_level_grade=aud_audit.get("flesch_kincaid_grade") if "aud_audit" in locals() else None,
+            reading_level_label=reading_level,
+            hallucination_risk_pct=grounding_res.get("hallucination_risk_pct"),
+            grounding_score=grounding_res.get("grounding_score"),
+            latency_ms=max(1, latency)
+        )
+    except Exception as e:
+        logger.debug(f"Audit log notice: {e}")
+
     return SearchResponse(
         query=query,
         user_mode=user_mode,

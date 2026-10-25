@@ -20,6 +20,7 @@ from app.routes.medical_database import router as medical_database_router  # typ
 from app.routes.chat import router as chat_router  # type: ignore # pyrefly: ignore
 from app.routes.encyclopedia import router as encyclopedia_router  # type: ignore # pyrefly: ignore
 from app.routes.taxonomy import router as taxonomy_router  # type: ignore # pyrefly: ignore
+from app.routes.audit import router as audit_router  # type: ignore # pyrefly: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,7 @@ app.include_router(agentic_router)
 app.include_router(medical_database_router)
 app.include_router(encyclopedia_router)
 app.include_router(taxonomy_router)
+app.include_router(audit_router)
 
 @app.get("/")
 async def root():

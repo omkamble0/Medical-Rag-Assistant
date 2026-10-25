@@ -9,7 +9,7 @@ from typing import Optional, List, Dict, Any
 
 from app.services.agent_workflow import execute_agentic_rag_workflow
 from app.services.tools.clinical_calculator import (
-    calculate_egfr, calculate_bmi, calculate_cha2ds2_vasc, calculate_wells_pe
+    calculate_egfr, calculate_bmi, calculate_cha2ds2_vasc, calculate_wells_pe, calculate_curb65
 )
 from app.services.tools.drug_interaction import check_drug_interactions, screen_single_drug_safety
 from app.services.tools.pubmed_tool import search_pubmed_literature
@@ -26,7 +26,7 @@ class AgenticQueryRequest(BaseModel):
 
 
 class CalculatorRequest(BaseModel):
-    formula: str = Field(..., description="'egfr', 'bmi', 'cha2ds2_vasc', or 'wells_pe'")
+    formula: str = Field(..., description="'egfr', 'bmi', 'cha2ds2_vasc', 'wells_pe', or 'curb65'")
     parameters: Dict[str, Any] = Field(..., description="Key-value calculation inputs")
 
 
@@ -106,10 +106,19 @@ async def calculate_endpoint(payload: CalculatorRequest):
                 hemoptysis=bool(p.get("hemoptysis", False)),
                 active_cancer=bool(p.get("active_cancer", False))
             )
+        elif formula in ["curb65", "curb_65", "pneumonia"]:
+            age_val = int(p.get("age", 0))
+            return calculate_curb65(
+                confusion=bool(p.get("confusion", False)),
+                bun_over_19=bool(p.get("bun_over_19", p.get("urea", False))),
+                rr_over_30=bool(p.get("rr_over_30", False)),
+                sbp_under_90_or_dbp_under_60=bool(p.get("sbp_under_90_or_dbp_under_60", p.get("hypotension", False))),
+                age_over_65=bool(p.get("age_over_65", age_val >= 65))
+            )
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unknown calculator '{formula}'. Supported: 'egfr', 'bmi', 'cha2ds2_vasc', 'wells_pe'"
+                detail=f"Unknown calculator '{formula}'. Supported: 'egfr', 'bmi', 'cha2ds2_vasc', 'wells_pe', 'curb65'"
             )
     except Exception as e:
         raise HTTPException(
