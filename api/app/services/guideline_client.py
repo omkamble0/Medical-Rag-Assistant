@@ -123,6 +123,74 @@ CLINICAL_GUIDELINES: List[Dict[str, Any]] = [
             "mandatory due to CYP3A inhibition. Alternative therapies: IV Remdesivir (within 7 days) or Molnupiravir (within 5 days)."
         ),
         "key_takeaway": "Paxlovid within 5 days of onset is primary oral antiviral; mandatory drug-drug interaction audit before dispensing."
+    },
+    {
+        "id": "GL-HF-01",
+        "domain": "cardiology",
+        "authority": "American Heart Association / American College of Cardiology (AHA/ACC/HFSA)",
+        "title": "2022 AHA/ACC/HFSA Guideline for the Management of Heart Failure",
+        "journal": "Circulation / Journal of the American College of Cardiology",
+        "year": 2022,
+        "evidence_level": EvidenceLevel.LEVEL_1,
+        "keywords": ["heart failure", "hfref", "sacubitril", "valsartan", "arni", "dapagliflozin", "empagliflozin", "spironolactone", "carvedilol", "ejection fraction"],
+        "snippet": (
+            "Quadruple Guideline-Directed Medical Therapy (GDMT) is Class 1 (Level A) recommended for all patients with HFrEF (LVEF <=40%): "
+            "1. ARNI (Sacubitril/Valsartan) as first-line preferred over ACEi/ARB. "
+            "2. Evidence-based Beta-Blocker (Carvedilol, Metoprolol Succinate, or Bisoprolol). "
+            "3. Mineralocorticoid Receptor Antagonist (Spironolactone or Eplerenone). "
+            "4. SGLT2 inhibitor (Dapagliflozin or Empagliflozin) irrespective of diabetes status. "
+            "Combined quadruple GDMT achieves a 61% relative reduction in 2-year all-cause mortality compared to historical control."
+        ),
+        "key_takeaway": "Quadruple GDMT (ARNI + Beta-Blocker + MRA + SGLT2i) is mandatory Class 1A standard for HFrEF, reducing mortality by 61%."
+    },
+    {
+        "id": "GL-COPD-01",
+        "domain": "pulmonology",
+        "authority": "Global Initiative for Chronic Obstructive Lung Disease (GOLD)",
+        "title": "2024 Global Strategy for Prevention, Diagnosis, and Management of COPD",
+        "journal": "American Journal of Respiratory and Critical Care Medicine",
+        "year": 2024,
+        "evidence_level": EvidenceLevel.LEVEL_1,
+        "keywords": ["copd", "emphysema", "bronchitis", "tiotropium", "formoterol", "laba", "lama", "inhaler", "fluticasone", "exacerbation"],
+        "snippet": (
+            "In patients with COPD and frequent exacerbations (GOLD Group E), initial treatment with dual LABA+LAMA bronchodilators "
+            "is superior to LABA+ICS combinations. Add Inhaled Corticosteroid (Triple Therapy: LABA/LAMA/ICS) only when blood eosinophils "
+            "are >=300 cells/uL or >=100 cells/uL with >=2 moderate exacerbations per year. Inhaled corticosteroid monotherapy is strictly contraindicated."
+        ),
+        "key_takeaway": "Dual LABA+LAMA is standard first-line; ICS restricted to eosinophil-high exacerbation phenotypes; ICS monotherapy contraindicated."
+    },
+    {
+        "id": "GL-CAP-01",
+        "domain": "infectious disease",
+        "authority": "Infectious Diseases Society of America (IDSA) / American Thoracic Society (ATS)",
+        "title": "Clinical Practice Guideline on Diagnosis and Treatment of Adults with Community-Acquired Pneumonia",
+        "journal": "American Journal of Respiratory and Critical Care Medicine",
+        "year": 2023,
+        "evidence_level": EvidenceLevel.LEVEL_1,
+        "keywords": ["pneumonia", "cap", "amoxicillin", "azithromycin", "doxycycline", "levofloxacin", "curb-65", "infiltrate"],
+        "snippet": (
+            "Empiric outpatient antimicrobial therapy: For healthy adults without comorbidities: Amoxicillin 1g TID OR Doxycycline 100mg BID. "
+            "For outpatients with chronic cardiopulmonary/renal comorbidities: Beta-lactam combination (Amoxicillin/Clavulanate 875/125mg BID or Cefuroxime) "
+            "PLUS Macrolide (Azithromycin) or Doxycycline; OR Respiratory Fluoroquinolone monotherapy (Levofloxacin 750mg daily). "
+            "Stratify severity using the CURB-65 pneumonia severity score to determine outpatient vs inpatient care."
+        ),
+        "key_takeaway": "Amoxicillin/Doxycycline for healthy outpatients; Beta-lactam + Azithromycin for comorbid CAP; CURB-65 guides admission."
+    },
+    {
+        "id": "GL-AFIB-01",
+        "domain": "cardiology",
+        "authority": "American College of Cardiology / American Heart Association (ACC/AHA/ACCP/HRS)",
+        "title": "2023 ACC/AHA/ACCP/HRS Guideline for the Diagnosis and Management of Atrial Fibrillation",
+        "journal": "Circulation / Journal of the American College of Cardiology",
+        "year": 2023,
+        "evidence_level": EvidenceLevel.LEVEL_1,
+        "keywords": ["atrial fibrillation", "afib", "apixaban", "eliquis", "rivaroxaban", "xarelto", "warfarin", "cha2ds2-vasc", "anticoagulation", "ablation"],
+        "snippet": (
+            "Direct Oral Anticoagulants (DOACs: Apixaban, Rivaroxaban, Dabigatran) are Class 1 (Level A) recommended over Warfarin "
+            "for stroke prevention in patients with non-valvular AFib and elevated thromboembolic risk (CHA2DS2-VASc >=2 in men, >=3 in women). "
+            "Catheter ablation is Class 1 recommended for rhythm control in symptomatic paroxysmal AFib to reduce hospitalizations and symptoms."
+        ),
+        "key_takeaway": "Class 1A: DOACs preferred over Warfarin; catheter ablation established for early rhythm control in symptomatic AFib."
     }
 ]
 

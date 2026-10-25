@@ -18,6 +18,7 @@ from app.core.readability import (
     compute_readability_metrics,
     detect_statistical_leaks,
     sanitize_patient_mode_text,
+    normalize_patient_jargon,
     enforce_audience_contract
 )
 from app.models.enums import UserMode
@@ -113,6 +114,16 @@ class TestAudienceEnforcement(unittest.TestCase):
         self.assertIn("HR 0.74", clean)
         self.assertIn("p < 0.001", clean)
         self.assertIn("Oxford CEBM Level 1", clean)
+
+    def test_patient_jargon_normalization(self):
+        """Test that complex Greek/Latin clinical jargon is translated to plain English with context."""
+        jargon_text = "The patient presented with severe dyspnea, peripheral edema, syncope, and pyrexia."
+        translated = normalize_patient_jargon(jargon_text)
+
+        self.assertIn("shortness of breath (dyspnea)", translated)
+        self.assertIn("swelling from fluid build-up (edema)", translated)
+        self.assertIn("fainting episode (syncope)", translated)
+        self.assertIn("fever (pyrexia)", translated)
 
     def test_process_clinical_query_reading_level_integration(self):
         """Test that rag_engine output contains validated dynamic reading levels."""

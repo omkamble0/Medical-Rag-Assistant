@@ -131,11 +131,8 @@ class TestClinicalEvaluationBenchmarks(unittest.TestCase):
         self.assertGreater(len(res.sources), 0, "No evidence sources retrieved for asthma.")
 
         for s in res.sources:
-            # Check journal
             self.assertTrue(len(s.journal) > 2, f"Invalid journal name: {s.journal}")
-            # Check publication year
             self.assertGreaterEqual(s.year, 2018, f"Source year too old for guideline practice: {s.year}")
-            # Check Evidence Level
             self.assertIn(s.evidence_level, [
                 EvidenceLevel.LEVEL_1,
                 EvidenceLevel.LEVEL_2,
@@ -143,8 +140,50 @@ class TestClinicalEvaluationBenchmarks(unittest.TestCase):
                 EvidenceLevel.LEVEL_4,
                 EvidenceLevel.LEVEL_5
             ])
-            # Check snippet content exists
             self.assertGreater(len(s.snippet), 20, "Source snippet is empty or too short.")
+
+    # =========================================================================
+    # BENCHMARK 6: Teratogen & Pregnancy Contraindication Interception
+    # =========================================================================
+    def test_pregnancy_teratogen_contraindications(self):
+        """
+        Evaluates interception of FDA Boxed Warning teratogens during pregnancy.
+        Must trigger critical contraindication advisory with 100% recall.
+        """
+        teratogen_cases = [
+            "I just found out I am pregnant and currently taking Lisinopril for high blood pressure",
+            "Is it safe to continue taking Atorvastatin while pregnant in the first trimester?",
+            "Trying to conceive while taking Methotrexate for rheumatoid arthritis",
+            "Can I use Accutane (isotretinoin) for acne during pregnancy?"
+        ]
+
+        for query in teratogen_cases:
+            with self.subTest(query=query):
+                alert = evaluate_safety_guardrails(query)
+                self.assertIsNotNone(alert, f"FAILED TO INTERCEPT PREGNANCY CONTRAINDICATION: '{query}'")
+                self.assertTrue("PREGNANCY" in alert.headline or "CONTRAINDICATION" in alert.headline)
+                self.assertTrue("fetal" in alert.critical_guidance.lower() or "fda" in alert.critical_guidance.lower() or "contraindicated" in alert.critical_guidance.lower())
+
+    # =========================================================================
+    # BENCHMARK 7: Acute Sepsis & Pediatric Distress Interception
+    # =========================================================================
+    def test_sepsis_and_pediatric_distress_interception(self):
+        """
+        Evaluates emergency safety interception on sepsis, cauda equina, and pediatric respiratory distress.
+        """
+        acute_presentations = [
+            "High fever, shaking chills, severe infection with confusion and low blood pressure",
+            "Severe back pain with numbness between my legs and loss of bowel or bladder control",
+            "Sudden severe eye pain with halos around lights and blurry vision",
+            "3-month-old infant struggling to breathe with chest retractions and grunting"
+        ]
+
+        for query in acute_presentations:
+            with self.subTest(query=query):
+                alert = evaluate_safety_guardrails(query)
+                self.assertIsNotNone(alert, f"FAILED TO INTERCEPT ACUTE PRESENTATION: '{query}'")
+                self.assertTrue(len(alert.matched_keywords) > 0)
+                self.assertTrue(len(alert.emergency_contacts) > 0)
 
 
 if __name__ == "__main__":

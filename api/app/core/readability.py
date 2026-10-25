@@ -63,8 +63,8 @@ def compute_readability_metrics(text: str) -> Dict[str, Any]:
     cleaned = re.sub(r"[*_`#>]", " ", cleaned)
     cleaned = re.sub(r"\[\d+\]", "", cleaned)  # Exclude citation brackets [1]
 
-    # Split into sentences
-    raw_sentences = [s.strip() for s in re.split(r"[.!?]+(?:\s+|\n+|$)", cleaned) if s.strip()]
+    # Split into sentences (terminal punctuation, newlines, or markdown bullet items)
+    raw_sentences = [s.strip() for s in re.split(r"[.!?]+(?:\s+|\n+|$)|[\r\n]+", cleaned) if s.strip()]
     # Filter very short fragments
     sentences = [s for s in raw_sentences if len(s.split()) >= 2]
 
@@ -188,6 +188,53 @@ def sanitize_patient_mode_text(text: str) -> str:
     return sanitized.strip()
 
 
+# Common medical jargon requiring plain-English translations for patients
+PATIENT_JARGON_MAPPINGS: List[Tuple[str, str]] = [
+    (r"\bmyocardial infarction\b", "heart attack (myocardial infarction)"),
+    (r"\bhypertension\b", "high blood pressure (hypertension)"),
+    (r"\bdyspnea\b", "shortness of breath (dyspnea)"),
+    (r"\bhyperlipidemia\b", "high cholesterol (hyperlipidemia)"),
+    (r"\bdyslipidemia\b", "cholesterol imbalance (dyslipidemia)"),
+    (r"\bpruritus\b", "itching (pruritus)"),
+    (r"\bedema\b", "swelling from fluid build-up (edema)"),
+    (r"\bsyncope\b", "fainting episode (syncope)"),
+    (r"\barrhythmia\b", "irregular heartbeat (arrhythmia)"),
+    (r"\berythema\b", "skin redness (erythema)"),
+    (r"\bpyrexia\b", "fever (pyrexia)"),
+    (r"\bparesthesia\b", "pins-and-needles or tingling (paresthesia)"),
+    (r"\bhematuria\b", "blood in the urine (hematuria)"),
+    (r"\bepistaxis\b", "nosebleed (epistaxis)"),
+    (r"\bnephropathy\b", "kidney damage (nephropathy)"),
+    (r"\bneuropathy\b", "nerve damage (neuropathy)"),
+    (r"\bretinopathy\b", "eye disease (retinopathy)"),
+    (r"\btachycardia\b", "rapid heart rate (tachycardia)"),
+    (r"\bbradycardia\b", "slow heart rate (bradycardia)"),
+    (r"\borthopnea\b", "shortness of breath when lying flat (orthopnea)"),
+    (r"\bdiaphoresis\b", "heavy sweating (diaphoresis)"),
+    (r"\bxerostomia\b", "dry mouth (xerostomia)"),
+    (r"\burticaria\b", "hives (urticaria)"),
+    (r"\bvertigo\b", "spinning sensation (vertigo)"),
+    (r"\bpolyuria\b", "frequent urination (polyuria)"),
+    (r"\bpolydipsia\b", "excessive thirst (polydipsia)"),
+    (r"\bdysphagia\b", "difficulty swallowing (dysphagia)")
+]
+
+
+def normalize_patient_jargon(text: str) -> str:
+    """
+    Translates technical Latin/Greek clinical terminology into accessible, plain-English
+    explanations so patients can easily understand medical concepts without intimidation.
+    """
+    result = text
+    for pattern, replacement in PATIENT_JARGON_MAPPINGS:
+        # Avoid double-wrapping if term already has a parenthetical
+        clean_term = pattern.replace(r"\b", "")
+        if f"({clean_term})" in result or f"({clean_term.lower()})" in result.lower():
+            continue
+        result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
+    return result
+
+
 def enforce_audience_contract(
     raw_answer: str,
     audience: str
@@ -208,6 +255,7 @@ def enforce_audience_contract(
     if norm_aud == "patient":
         leaks_detected = detect_statistical_leaks(raw_answer)
         clean_answer = sanitize_patient_mode_text(raw_answer) if leaks_detected else raw_answer
+        clean_answer = normalize_patient_jargon(clean_answer)
         metrics = compute_readability_metrics(clean_answer)
 
         # Build reading level label ensuring standard clinical compatibility

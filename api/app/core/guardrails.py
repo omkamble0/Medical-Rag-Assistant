@@ -12,9 +12,15 @@ EXPLICIT_EMERGENCY_TRIGGERS = [
     # Neurological / Stroke (FAST)
     r"\b(stroke|facial droop|slurred speech|sudden hemiparesis|sudden weakness|loss of consciousness|unresponsive|thunderclap headache|subarachnoid)\b",
     # Severe Airway & Respiratory Failure
-    r"\b(can't breathe|cannot breathe|severe shortness of breath|suffocating|gasping for air|cyanosis|stridor|anaphylaxis|throat closing|severe allergic reaction|epipen)\b",
+    r"\b(can't breathe|cannot breathe|severe shortness of breath|suffocating|gasping for air|cyanosis|stridor|anaphylaxis|throat closing|severe allergic reaction|epipen|infant struggling to breathe|grunting while breathing)\b",
     # Hemorrhage & Severe Trauma
     r"\b(severe bleeding|uncontrolled bleeding|massive hemorrhage|arterial bleed|coughing up(\s+\w+){0,4}\s+blood|vomiting(\s+\w+){0,4}\s+blood|hemoptysis|hematemesis|gunshot|stab wound)\b",
+    # Sepsis & Systemic Crisis
+    r"\b(septic shock|sepsis|severe infection with confusion|high fever and unresponsive|hypothermia and mottled skin)\b",
+    # Acute Neurological / Spinal Emergencies (Cauda Equina)
+    r"\b(cauda equina|saddle anesthesia|numbness between (my )?legs|loss of bowel or bladder control with back pain)\b",
+    # Acute Ophthalmologic Emergencies
+    r"\b(acute glaucoma|halos around lights|severe eye pain|sudden(\s+\w+){0,3}\s+eye pain)\b",
     # Poisoning & Crisis Self-Harm
     r"\b(overdose|poisoning|swallowed bleach|suicide|suicidal|kill myself|end my life|want to die)\b"
 ]
@@ -47,6 +53,19 @@ CONVERSATIONAL_NEGATION_PATTERNS = [
 ]
 
 
+# ============================================================
+# 4. Pregnancy & Teratogen Black Box Contraindications
+# ============================================================
+PREGNANCY_TERATOGEN_PATTERNS = [
+    (r"\b(lisinopril|enalapril|ramipril|captopril|benazepril|losartan|valsartan|candesartan|telmisartan|ace inhibitor|arb)\b", "ACEi/ARB", "ACE inhibitors and ARBs cause fetal renal dysgenesis, oligohydramnios, skull hypoplasia, and intrauterine demise (FDA Boxed Warning). Discontinue immediately upon pregnancy confirmation."),
+    (r"\b(atorvastatin|rosuvastatin|simvastatin|pravastatin|lovastatin|statin)\b", "Statins", "Statins disrupt essential fetal cholesterol and steroid hormone biosynthesis. Contraindicated in pregnancy and lactation."),
+    (r"\b(methotrexate|trexall)\b", "Methotrexate", "Methotrexate is a potent dihydrofolate reductase inhibitor causing embryofetal death, neural tube defects, and severe craniofacial malformations (FDA Category X)."),
+    (r"\b(isotretinoin|accutane)\b", "Isotretinoin", "Isotretinoin produces severe craniofacial, thymic, and cardiovascular malformations in over 30% of exposed fetuses. Strictly contraindicated."),
+    (r"\b(valproate|valproic acid|depakote)\b", "Valproic Acid", "Valproate carries a 1-2% risk of neural tube defects (spina bifida) and significant long-term neurocognitive/autism deficits."),
+    (r"\b(warfarin|coumadin)\b", "Warfarin", "Warfarin crosses the placenta, inducing fetal warfarin syndrome (nasal hypoplasia, stippled epiphyses, and fetal hemorrhages).")
+]
+
+
 def is_negated_or_historical(query: str) -> bool:
     """Checks if emergency terms are strictly mentioned in a negated or historical context."""
     q_low = query.lower()
@@ -59,15 +78,39 @@ def is_negated_or_historical(query: str) -> bool:
 def evaluate_safety_guardrails(query: str) -> Optional[EmergencyTriageAlert]:
     """
     Tier-1 Safety Interceptor:
-    1. Checks for explicit emergency patterns (911, STEMI, stroke).
-    2. Zero-shot matches colloquial euphemisms ("elephant on my chest").
-    3. Respects conversational negations ("doctor ruled out a heart attack").
+    1. Checks for pregnancy & teratogen black box contraindications (ACEi, Statins, Methotrexate).
+    2. Checks for explicit emergency patterns (STEMI, stroke, anaphylaxis, sepsis).
+    3. Zero-shot matches colloquial euphemisms ("elephant on my chest").
+    4. Respects conversational negations ("doctor ruled out a heart attack").
     """
     query_lower = query.lower()
 
     # If the query is explicitly discussing a ruled-out or historical event, bypass emergency lock
     if is_negated_or_historical(query_lower):
         return None
+
+    # Check high-risk pregnancy teratogenic contraindications
+    is_pregnant_context = bool(re.search(r"\b(pregnant|pregnancy|expecting|trimester|conception|trying to conceive|am with child)\b", query_lower))
+    if is_pregnant_context:
+        for drug_pat, drug_name, contraindication_desc in PREGNANCY_TERATOGEN_PATTERNS:
+            if re.search(drug_pat, query_lower):
+                return EmergencyTriageAlert(
+                    is_emergency=False,
+                    urgency=TriageUrgency.URGENT_EVALUATION,
+                    matched_keywords=["pregnancy contraindication", drug_name.lower()],
+                    headline="CRITICAL CONTRAINDICATION ADVISORY: PREGNANCY & FETAL TOXICITY WARNING",
+                    critical_guidance=f"POTENTIAL FETAL HARM WARNING: {contraindication_desc} Contact your obstetrician or prescribing physician immediately for safe alternative medication management.",
+                    red_flag_symptoms=[
+                        f"FDA Boxed Warning: {drug_name} exposure during pregnancy requires prompt clinical review.",
+                        "Do not abruptly discontinue critical cardiovascular medication without consulting an obstetrician/cardiologist.",
+                        "Safe pregnancy alternatives (e.g., Labetalol, Nifedipine, Methyldopa) are available for maternal health."
+                    ],
+                    emergency_contacts=[
+                        "Contact Obstetrician / Maternal-Fetal Medicine Specialist",
+                        "Prescribing Healthcare Provider Immediate Consultation",
+                        "MotherToBaby / Teratogen Information Specialist (866-626-6847)"
+                    ]
+                )
 
     matched_triggers: List[str] = []
     category: Optional[str] = None
