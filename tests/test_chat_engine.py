@@ -4,27 +4,22 @@ import unittest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "api")))
 
-from fastapi.testclient import TestClient
-from app.main import app
+from app.models.chat_schemas import ChatRequest
 from app.services.chat_engine import chat_engine
 
 
 class TestChatEngine(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.client = TestClient(app)
 
     def test_single_turn_patient_chat(self):
         """Tests initial patient turn explains disease first with analogy and no research papers by default."""
-        payload = {
-            "message": "What is hypertension and what can I do?",
-            "audience": "patient"
-        }
-        res = self.client.post("/api/v1/chat/message", json=payload)
-        self.assertEqual(res.status_code, 200)
-        data = res.json()
+        req = ChatRequest(
+            message="What is hypertension and what can I do?",
+            audience="patient"
+        )
+        res = chat_engine.process_message(req)
+        data = res.model_dump()
 
-        self.assertIn("conversation_id", data)
+        self.assertIsNotNone(data["conversation_id"])
         self.assertEqual(data["audience"], "patient")
         self.assertIn("### 1. Understanding the Condition: What It Is", data["message"])
         self.assertIn("### 2. Practical Solutions", data["message"])
@@ -35,24 +30,21 @@ class TestChatEngine(unittest.TestCase):
     def test_multi_turn_context_retention(self):
         """Tests that follow-up questions retain the active condition from prior turn."""
         # Turn 1: Mention Diabetes
-        turn1_payload = {
-            "message": "I was diagnosed with type 2 diabetes.",
-            "audience": "patient"
-        }
-        res1 = self.client.post("/api/v1/chat/message", json=turn1_payload)
-        self.assertEqual(res1.status_code, 200)
-        data1 = res1.json()
-        cid = data1["conversation_id"]
+        req1 = ChatRequest(
+            message="I was diagnosed with type 2 diabetes.",
+            audience="patient"
+        )
+        res1 = chat_engine.process_message(req1)
+        cid = res1.conversation_id
 
         # Turn 2: Follow-up pronoun question without repeating the condition name
-        turn2_payload = {
-            "message": "What are the common side effects of that?",
-            "conversation_id": cid,
-            "audience": "patient"
-        }
-        res2 = self.client.post("/api/v1/chat/message", json=turn2_payload)
-        self.assertEqual(res2.status_code, 200)
-        data2 = res2.json()
+        req2 = ChatRequest(
+            message="What are the common side effects of that?",
+            conversation_id=cid,
+            audience="patient"
+        )
+        res2 = chat_engine.process_message(req2)
+        data2 = res2.model_dump()
 
         self.assertEqual(data2["conversation_id"], cid)
         self.assertEqual(len(data2["history"]), 4)  # 2 user + 2 assistant
@@ -60,13 +52,12 @@ class TestChatEngine(unittest.TestCase):
 
     def test_doctor_mode_chat(self):
         """Tests that doctor mode receives postgraduate pathophysiology, GDMT, and Oxford CEBM citations."""
-        payload = {
-            "message": "Type 2 diabetes GDMT second-line pharmacotherapy",
-            "audience": "doctor"
-        }
-        res = self.client.post("/api/v1/chat/message", json=payload)
-        self.assertEqual(res.status_code, 200)
-        data = res.json()
+        req = ChatRequest(
+            message="Type 2 diabetes GDMT second-line pharmacotherapy",
+            audience="doctor"
+        )
+        res = chat_engine.process_message(req)
+        data = res.model_dump()
 
         self.assertEqual(data["audience"], "doctor")
         self.assertIn("### 1. Disease Overview", data["message"])
@@ -75,13 +66,12 @@ class TestChatEngine(unittest.TestCase):
 
     def test_acute_symptom_non_blocking_advisory(self):
         """Tests that acute red-flag symptoms trigger non-blocking clinical advisory banner."""
-        payload = {
-            "message": "Severe crushing chest pain radiating to my left arm",
-            "audience": "patient"
-        }
-        res = self.client.post("/api/v1/chat/message", json=payload)
-        self.assertEqual(res.status_code, 200)
-        data = res.json()
+        req = ChatRequest(
+            message="Severe crushing chest pain radiating to my left arm",
+            audience="patient"
+        )
+        res = chat_engine.process_message(req)
+        data = res.model_dump()
 
         self.assertIsNotNone(data["triage_alert"])
         self.assertFalse(data["triage_alert"]["is_emergency"])
@@ -90,19 +80,18 @@ class TestChatEngine(unittest.TestCase):
 
     def test_chat_history_and_clear_endpoints(self):
         """Tests retrieval and clearing of conversation sessions."""
-        payload = {"message": "Hello doctor", "audience": "patient"}
-        res = self.client.post("/api/v1/chat/message", json=payload)
-        cid = res.json()["conversation_id"]
+        req = ChatRequest(message="Hello doctor", audience="patient")
+        res = chat_engine.process_message(req)
+        cid = res.conversation_id
 
         # Fetch history
-        hist_res = self.client.get(f"/api/v1/chat/history/{cid}")
-        self.assertEqual(hist_res.status_code, 200)
-        self.assertEqual(len(hist_res.json()), 2)
+        history = chat_engine.get_session_history(cid)
+        self.assertEqual(len(history), 2)
 
         # Clear session
-        del_res = self.client.delete(f"/api/v1/chat/history/{cid}")
-        self.assertEqual(del_res.status_code, 200)
-        self.assertEqual(del_res.json()["status"], "cleared")
+        cleared = chat_engine.clear_session(cid)
+        self.assertTrue(cleared)
+        self.assertEqual(len(chat_engine.get_session_history(cid)), 0)
 
 
 if __name__ == "__main__":

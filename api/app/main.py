@@ -10,7 +10,14 @@ if str(API_ROOT) not in sys.path:
 
 from fastapi import FastAPI  # type: ignore # pyrefly: ignore
 from fastapi.middleware.cors import CORSMiddleware  # type: ignore # pyrefly: ignore
+from fastapi.responses import PlainTextResponse  # type: ignore # pyrefly: ignore
+
 from app.config import settings  # type: ignore # pyrefly: ignore
+from app.core.logging import setup_structured_logging
+from app.core.security import SecurityHeadersMiddleware
+from app.core.tracing import CorrelationIdMiddleware
+from app.core.metrics import MetricsMiddleware, metrics
+
 from app.api.v1.router import api_router  # type: ignore # pyrefly: ignore
 from app.routes.validate import router as validate_router  # type: ignore # pyrefly: ignore
 from app.routes.medical_query import router as medical_query_router  # type: ignore # pyrefly: ignore
@@ -21,27 +28,36 @@ from app.routes.chat import router as chat_router  # type: ignore # pyrefly: ign
 from app.routes.encyclopedia import router as encyclopedia_router  # type: ignore # pyrefly: ignore
 from app.routes.taxonomy import router as taxonomy_router  # type: ignore # pyrefly: ignore
 from app.routes.audit import router as audit_router  # type: ignore # pyrefly: ignore
+from app.routes.clinical_production import router as clinical_production_router  # type: ignore # pyrefly: ignore
 
-logger = logging.getLogger(__name__)
+logger = setup_structured_logging(log_level=settings.LOG_LEVEL)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description="Agentic Evidence-Based Clinical RAG Engine with Query Guard & Audience-Aware Routing",
-    version="1.0.0",
+    description="Agentic Evidence-Based Clinical RAG Engine with Layered Architecture, Query Guard & Safety Interceptors",
+    version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
 
-# CORS middleware for Next.js frontend communication
+# 4. CORS middleware for Next.js frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS if settings.CORS_ORIGINS else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routes
+# Root Prometheus scraper mount
+@app.get("/metrics", response_class=PlainTextResponse, tags=["Observability"])
+async def root_prometheus_metrics():
+    return PlainTextResponse(metrics.export_prometheus(), media_type="text/plain; version=0.0.4")
+
+# Include production layered architecture routes
+app.include_router(clinical_production_router)
+
+# Include legacy routes for 100% backwards compatibility
 app.include_router(api_router, prefix=settings.API_V1_STR)
 app.include_router(chat_router)
 app.include_router(validate_router)
@@ -57,8 +73,11 @@ app.include_router(audit_router)
 async def root():
     return {
         "message": "Welcome to AegisMed Clinical Truth Engine API",
+        "version": "2.0.0",
         "docs": "/docs",
-        "health": f"{settings.API_V1_STR}/health"
+        "health": f"{settings.API_V1_STR}/health",
+        "metrics": "/metrics",
+        "structured_query": f"{settings.API_V1_STR}/clinical/query"
     }
 
 if __name__ == "__main__":

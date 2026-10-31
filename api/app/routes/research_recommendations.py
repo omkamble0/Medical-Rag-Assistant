@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 from app.core.prompts import normalize_audience, MANDATORY_DISCLAIMER
 from app.services.guideline_client import find_guidelines_by_condition, build_guideline_evidence_document
-from app.services.pubmed_client import search_pubmed, build_medical_evidence_document
+from app.services.pubmed_client import search_pubmed, search_pubmed_sync, build_medical_evidence_document
 from app.services.vector_store import retrieve_clinical_evidence
 from app.models.schemas import SourceDocument
 from app.models.enums import EvidenceLevel
@@ -60,7 +60,7 @@ class DoctorResearchResponse(BaseModel):
     summary="Get Evidence-Backed Research Recommendations for Patients or Doctors",
     response_model=Dict[str, Any]
 )
-async def get_research_recommendations(payload: ResearchRecommendationRequest):
+def get_research_recommendations(payload: ResearchRecommendationRequest):
     """
     Generates targeted clinical research recommendations based on:
     1. Audience Normalization ('patient' vs 'doctor')
@@ -74,7 +74,7 @@ async def get_research_recommendations(payload: ResearchRecommendationRequest):
 
         # Step 1: Retrieve multi-source evidence (Guidelines + PubMed + Vector DB)
         guidelines = find_guidelines_by_condition(condition)
-        pubmed_articles = await search_pubmed(condition, max_results=payload.max_results)
+        pubmed_articles = search_pubmed_sync(condition, max_results=payload.max_results)
         vector_sources = retrieve_clinical_evidence(condition, top_k=payload.max_results)
 
         # Assemble unified source list

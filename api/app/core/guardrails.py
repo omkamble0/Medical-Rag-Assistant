@@ -8,7 +8,7 @@ from app.models.enums import TriageUrgency
 # ============================================================
 EXPLICIT_EMERGENCY_TRIGGERS = [
     # Cardiac & Acute Coronary Syndrome
-    r"\b(heart attack|myocardial infarction|stemi|nstemi|cardiac arrest|crushing(\s+\w+){0,3}\s+chest pain|crushing chest pain|severe chest pressure|radiating chest pain)\b",
+    r"\b(heart attack|myocardial infarction|stemi|nstemi|cardiac arrest|crushing(\s+\w+){0,3}\s+chest (pain|pressure|tightness)|crushing chest (pain|pressure|tightness)|severe chest (pressure|pain)|radiating chest (pain|pressure))\b",
     # Neurological / Stroke (FAST)
     r"\b(stroke|facial droop|slurred speech|sudden hemiparesis|sudden weakness|loss of consciousness|unresponsive|thunderclap headache|subarachnoid)\b",
     # Severe Airway & Respiratory Failure

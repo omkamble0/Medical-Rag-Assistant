@@ -29,12 +29,25 @@ class MedicalLLMGateway:
     4. Ollama (if running locally at localhost:11434)
     5. Local High-Fidelity Clinical Synthesis Engine (instant offline fallback)
     """
+    _network_blocked: bool = False
 
     def __init__(self):
         pass
 
     @property
+    def is_offline(self) -> bool:
+        if MedicalLLMGateway._network_blocked:
+            return True
+        try:
+            from app.config import settings
+            return getattr(settings, "is_offline", False)
+        except Exception:
+            return os.getenv("OFFLINE_MODE") in ("1", "true")
+
+    @property
     def openai_key(self) -> str:
+        if self.is_offline:
+            return ""
         k = os.getenv("OPENAI_API_KEY", "")
         if not k:
             try:
@@ -46,6 +59,8 @@ class MedicalLLMGateway:
 
     @property
     def groq_key(self) -> str:
+        if self.is_offline:
+            return ""
         k = os.getenv("GROQ_API_KEY", "")
         if not k:
             try:
@@ -57,6 +72,8 @@ class MedicalLLMGateway:
 
     @property
     def gemini_key(self) -> str:
+        if self.is_offline:
+            return ""
         k = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY", "")
         if not k:
             try:
@@ -88,6 +105,16 @@ class MedicalLLMGateway:
 
     def get_active_provider_info(self) -> Dict[str, Any]:
         """Returns detected provider availability status."""
+        if self.is_offline:
+            return {
+                "active_provider": "Local High-Fidelity Engine",
+                "openai_available": False,
+                "groq_available": False,
+                "gemini_available": False,
+                "ollama_available": False,
+                "local_fallback_active": True
+            }
+
         has_openai = bool(self.openai_key and len(self.openai_key) > 10)
         has_groq = bool(self.groq_key and len(self.groq_key) > 10)
         has_gemini = bool(self.gemini_key and len(self.gemini_key) > 10)
@@ -214,28 +241,34 @@ class MedicalLLMGateway:
                     "status": "success"
                 }
             except Exception as e:
+                err_str = str(e).lower()
+                if "10013" in err_str or "forbidden by its access permissions" in err_str or "connection error" in err_str:
+                    MedicalLLMGateway._network_blocked = True
                 logger.warning(f"Google Gemini call via OpenAI endpoint failed: {e}. Trying direct REST API...")
-                try:
-                    with httpx.Client(timeout=4.0) as client:
-                        target_model = model_name or os.getenv("GEMINI_MODEL", "gemini-flash-latest")
-                        url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={self.gemini_key}"
-                        combined_text = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
-                        payload = {
-                            "contents": [{"parts": [{"text": combined_text}]}],
-                            "generationConfig": {"temperature": temperature}
-                        }
-                        res = client.post(url, json=payload)
-                        if res.status_code == 200:
-                            data = res.json()
-                            candidate_text = data["candidates"][0]["content"]["parts"][0]["text"]
-                            return {
-                                "content": candidate_text,
-                                "provider": "Google Gemini (REST)",
-                                "model": target_model,
-                                "status": "success"
+                if MedicalLLMGateway._network_blocked:
+                    pass
+                else:
+                    try:
+                        with httpx.Client(timeout=4.0) as client:
+                            target_model = model_name or os.getenv("GEMINI_MODEL", "gemini-flash-latest")
+                            url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={self.gemini_key}"
+                            combined_text = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+                            payload = {
+                                "contents": [{"parts": [{"text": combined_text}]}],
+                                "generationConfig": {"temperature": temperature}
                             }
-                except Exception as ex2:
-                    logger.warning(f"Google Gemini REST fallback failed, cascading: {ex2}")
+                            res = client.post(url, json=payload)
+                            if res.status_code == 200:
+                                data = res.json()
+                                candidate_text = data["candidates"][0]["content"]["parts"][0]["text"]
+                                return {
+                                    "content": candidate_text,
+                                    "provider": "Google Gemini (REST)",
+                                    "model": target_model,
+                                    "status": "success"
+                                }
+                    except Exception as ex2:
+                        logger.warning(f"Google Gemini REST fallback failed, cascading: {ex2}")
 
         # 4. Try Ollama (Local)
         if provider_info["ollama_available"]:
@@ -390,35 +423,41 @@ class MedicalLLMGateway:
                     "status": "success"
                 }
             except Exception as e:
+                err_str = str(e).lower()
+                if "10013" in err_str or "forbidden by its access permissions" in err_str or "connection error" in err_str:
+                    MedicalLLMGateway._network_blocked = True
                 logger.warning(f"Google Gemini chat call via OpenAI endpoint failed: {e}. Trying direct REST API...")
-                try:
-                    with httpx.Client(timeout=4.0) as client:
-                        target_model = model_name or os.getenv("GEMINI_MODEL", "gemini-flash-latest")
-                        url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={self.gemini_key}"
-                        # Convert messages to Gemini contents structure
-                        gemini_contents = []
-                        for m in messages:
-                            role = "model" if m.get("role") == "assistant" else "user"
-                            gemini_contents.append({
-                                "role": role,
-                                "parts": [{"text": m.get("content", "")}]
-                            })
-                        payload = {
-                            "contents": gemini_contents,
-                            "generationConfig": {"temperature": temperature}
-                        }
-                        res = client.post(url, json=payload)
-                        if res.status_code == 200:
-                            data = res.json()
-                            candidate_text = data["candidates"][0]["content"]["parts"][0]["text"]
-                            return {
-                                "content": candidate_text,
-                                "provider": "Google Gemini (REST)",
-                                "model": target_model,
-                                "status": "success"
+                if MedicalLLMGateway._network_blocked:
+                    pass
+                else:
+                    try:
+                        with httpx.Client(timeout=4.0) as client:
+                            target_model = model_name or os.getenv("GEMINI_MODEL", "gemini-flash-latest")
+                            url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={self.gemini_key}"
+                            # Convert messages to Gemini contents structure
+                            gemini_contents = []
+                            for m in messages:
+                                role = "model" if m.get("role") == "assistant" else "user"
+                                gemini_contents.append({
+                                    "role": role,
+                                    "parts": [{"text": m.get("content", "")}]
+                                })
+                            payload = {
+                                "contents": gemini_contents,
+                                "generationConfig": {"temperature": temperature}
                             }
-                except Exception as ex2:
-                    logger.warning(f"Google Gemini chat REST fallback failed, cascading: {ex2}")
+                            res = client.post(url, json=payload)
+                            if res.status_code == 200:
+                                data = res.json()
+                                candidate_text = data["candidates"][0]["content"]["parts"][0]["text"]
+                                return {
+                                    "content": candidate_text,
+                                    "provider": "Google Gemini (REST)",
+                                    "model": target_model,
+                                    "status": "success"
+                                }
+                    except Exception as ex2:
+                        logger.warning(f"Google Gemini chat REST fallback failed, cascading: {ex2}")
 
         # 4. Try Ollama (Local Chat API)
         if provider_info["ollama_available"]:

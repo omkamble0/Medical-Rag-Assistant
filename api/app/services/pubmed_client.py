@@ -170,6 +170,13 @@ class PubMedImporter:
         max_results: int = 5
     ) -> List[Dict[str, Any]]:
         """Queries PubMed for top peer-reviewed clinical evidence for a disease or condition."""
+        import os
+        from app.config import settings
+        if getattr(settings, "is_offline", False) or getattr(settings, "OFFLINE_MODE", False) or getattr(settings, "IS_TESTING", False) or os.getenv("OFFLINE_MODE") in ("1", "true"):
+            fb = self._get_fallback_evidence(disease_name, max_results)
+            _PUBMED_CACHE[disease_name.strip().lower()] = (time.time(), fb)
+            return fb
+
         filter_terms = (
             '("systematic review"[pt] OR "meta-analysis"[pt] OR "guideline"[pt] OR "practice guideline"[pt] OR "randomized controlled trial"[pt])'
         )
@@ -265,6 +272,13 @@ class PubMedImporter:
         """Synchronously queries Europe PMC and PubMed with TTL caching and fallback."""
         cache_key = disease_name.strip().lower()
         now = time.time()
+        import os
+        from app.config import settings
+        if getattr(settings, "is_offline", False) or getattr(settings, "OFFLINE_MODE", False) or os.getenv("OFFLINE_MODE") in ("1", "true"):
+            fb = self._get_fallback_evidence(disease_name, max_results)
+            _PUBMED_CACHE[cache_key] = (now, fb)
+            return fb
+
         if cache_key in _PUBMED_CACHE:
             cached_time, cached_docs = _PUBMED_CACHE[cache_key]
             if now - cached_time < 86400:  # 24h cache

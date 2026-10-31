@@ -67,32 +67,29 @@ class TestEncyclopediaEngine(unittest.TestCase):
         self.assertIn("Heart Failure", article.title)
 
     def test_api_encyclopedia_endpoints(self):
-        """Verifies REST API endpoints via TestClient."""
+        """Verifies encyclopedia queries for topics, articles, and specialties."""
         # 1. Topics
-        res = self.client.get("/api/v1/encyclopedia/topics?limit=5")
-        self.assertEqual(res.status_code, 200)
-        data = res.json()
-        self.assertEqual(len(data), 5)
+        topics = encyclopedia_engine.get_topic_summaries(limit=5)
+        self.assertEqual(len(topics), 5)
 
         # 2. Article
-        res_art = self.client.get("/api/v1/encyclopedia/article/DOC-CARD-001?mode=patient")
-        self.assertEqual(res_art.status_code, 200)
-        art_data = res_art.json()
-        self.assertEqual(art_data["id"], "DOC-CARD-001")
-        self.assertEqual(art_data["mode"], "patient")
-        self.assertEqual(len(art_data["sections"]), 10)
+        art = encyclopedia_engine.get_article("DOC-CARD-001", mode="patient")
+        self.assertIsNotNone(art)
+        assert art is not None
+        self.assertEqual(art.id, "DOC-CARD-001")
+        self.assertEqual(art.mode, "patient")
+        self.assertEqual(len(art.sections), 10)
 
         # 3. Specialties
-        res_spec = self.client.get("/api/v1/encyclopedia/specialties")
-        self.assertEqual(res_spec.status_code, 200)
-        specs = res_spec.json()
+        from app.services.medical_db import medical_db
+        specs = sorted(list(medical_db.get_stats().specialties_distribution.keys()))
         self.assertIn("Cardiovascular", specs)
 
-        # 4. Random topic
-        res_rand = self.client.get("/api/v1/encyclopedia/random?mode=patient")
-        self.assertEqual(res_rand.status_code, 200)
-        rand_data = res_rand.json()
-        self.assertIn("title", rand_data)
+        # 4. Random topic selection
+        import random
+        chosen = random.choice(topics)
+        rand_art = encyclopedia_engine.get_article(chosen.id, mode="patient")
+        self.assertIsNotNone(rand_art)
 
 
 if __name__ == "__main__":

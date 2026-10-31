@@ -315,21 +315,29 @@ class MedicalDatabase:
         try:
             from qdrant_client import QdrantClient
             
-            # 1. Check for Qdrant Cloud URL and API Key
-            if settings.QDRANT_URL and settings.QDRANT_URL.strip():
+            # 1. Check for Qdrant Cloud URL and API Key if not offline
+            if not getattr(settings, "is_offline", False) and settings.QDRANT_URL and settings.QDRANT_URL.strip():
                 cloud_url = settings.QDRANT_URL.strip()
                 api_key = settings.QDRANT_API_KEY.strip() if settings.QDRANT_API_KEY else None
-                print(f"[*] Initializing connection to Qdrant Cloud at {cloud_url}...")
-                self._qdrant_client = QdrantClient(url=cloud_url, api_key=api_key, timeout=12.0)
-                # Verify cluster connection
-                self._qdrant_client.get_collections()
-                self._qdrant_ready = True
-                self._is_cloud = True
-                print(f"[OK] Connected to Qdrant Cloud online cluster!")
-                return
+                try:
+                    print(f"[*] Initializing connection to Qdrant Cloud at {cloud_url}...")
+                    self._qdrant_client = QdrantClient(url=cloud_url, api_key=api_key, timeout=getattr(settings, "QDRANT_TIMEOUT", 2.0), check_compatibility=False)
+                    self._qdrant_client.get_collections()
+                    self._qdrant_ready = True
+                    self._is_cloud = True
+                    print(f"[OK] Connected to Qdrant Cloud online cluster!")
+                    return
+                except Exception as cloud_err:
+                    print(f"[!] Qdrant Cloud connection failed ({cloud_err}), falling back to local storage.")
 
             # 2. Local embedded filesystem storage fallback
             if QDRANT_STORAGE_DIR.exists():
+                lock_file = QDRANT_STORAGE_DIR / ".lock"
+                if lock_file.exists():
+                    try:
+                        lock_file.unlink()
+                    except Exception:
+                        pass
                 self._qdrant_client = QdrantClient(path=str(QDRANT_STORAGE_DIR))
                 self._qdrant_ready = True
                 self._is_cloud = False

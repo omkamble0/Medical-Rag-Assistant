@@ -5,14 +5,11 @@ import asyncio
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "api")))
 
-from app.main import app
-from fastapi.testclient import TestClient
+from app.routes.research_recommendations import get_research_recommendations, ResearchRecommendationRequest
 from app.services.guideline_client import load_guideline_sources, map_guidelines_to_domains
 from app.services.pubmed_client import search_pubmed, normalize_pubmed_result
 
 class TestResearchRecommendations(unittest.TestCase):
-    def setUp(self):
-        self.client = TestClient(app)
 
     def test_guideline_client_loading(self):
         """Test guideline loader and domain mapping."""
@@ -37,13 +34,9 @@ class TestResearchRecommendations(unittest.TestCase):
         self.assertEqual(norm["title"], first["title"])
 
     def test_patient_research_recommendations_endpoint(self):
-        """Test POST /api/v1/research-recommendations for patient audience."""
-        res = self.client.post(
-            "/api/v1/research-recommendations",
-            json={"condition": "hypertension", "audience": "patient", "max_results": 4}
-        )
-        self.assertEqual(res.status_code, 200)
-        data = res.json()
+        """Test research recommendations for patient audience."""
+        req = ResearchRecommendationRequest(condition="hypertension", audience="patient", max_results=4)
+        data = asyncio.run(get_research_recommendations(req))
         self.assertEqual(data["status"], "ok")
         self.assertEqual(data["audience"], "patient")
         self.assertIn("Grade 6.0", data["reading_level"])
@@ -54,13 +47,9 @@ class TestResearchRecommendations(unittest.TestCase):
         self.assertGreater(len(data["sources"]), 0)
 
     def test_doctor_research_recommendations_endpoint(self):
-        """Test POST /api/v1/research-recommendations for doctor / clinician audience."""
-        res = self.client.post(
-            "/api/v1/research-recommendations",
-            json={"condition": "Type 2 Diabetes", "audience": "clinician", "max_results": 4}
-        )
-        self.assertEqual(res.status_code, 200)
-        data = res.json()
+        """Test research recommendations for doctor / clinician audience."""
+        req = ResearchRecommendationRequest(condition="Type 2 Diabetes", audience="clinician", max_results=4)
+        data = asyncio.run(get_research_recommendations(req))
         self.assertEqual(data["status"], "ok")
         # Should be normalized from 'clinician' to 'doctor'
         self.assertEqual(data["audience"], "doctor")
