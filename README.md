@@ -2,7 +2,7 @@
 
 An evidence-based **Agentic Medical RAG Assistant** featuring real-time query validation (typo correction), vector evidence retrieval, audience-aware answer generation (Patient vs. Clinician modes), and Oxford CEBM grounding.
 
----## 🏗️ Architecture Pipeline (LangGraph & CRAG / Self-RAG)
+ Architecture Pipeline (LangGraph & CRAG / Self-RAG)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -61,67 +61,7 @@ An evidence-based **Agentic Medical RAG Assistant** featuring real-time query va
 │    - Reflective audit cross-referencing citations [1], [2]  │
 │    - Computes Grounding Score & Hallucination Risk %        │
 └─────────────────────────────────────────────────────────────┘
-```
 
----
-
-## 📂 Project Structure
-
-```
-Medical-Rag-Assistant/
-├── api/
-│   ├── app/
-│   │   ├── core/
-│   │   │   ├── prompts.py            # PATIENT & CLINICIAN prompt routing
-│   │   │   ├── guardrails.py         # Deterministic Tier-1 safety guardrails
-│   │   │   ├── query_parser.py       # Clinical entity extraction
-│   │   │   └── evaluator.py          # Grounding & confidence evaluation
-│   │   ├── services/
-│   │   │   ├── agent_workflow.py     # LangGraph 7-stage state graph workflow
-│   │   │   ├── llm_gateway.py        # OpenAI / Groq / Gemini / Ollama / Local gateway
-│   │   │   ├── medical_db.py         # 100+ Disease, Symptom & Solution Knowledge DB + Qdrant
-│   │   │   ├── rag_engine.py         # Evidence-based clinical RAG engine
-│   │   │   ├── query_guard.py        # Typo correction & validation gate
-│   │   │   ├── vector_store.py       # Vector evidence retrieval
-│   │   │   ├── crag/                 # Corrective & Self-Reflective RAG (CRAG & Self-RAG)
-│   │   │   │   ├── query_rewriter.py # MeSH mapping & sub-query generation
-│   │   │   │   ├── retrieval_grader.py# CRAG relevance evaluation & fallback
-│   │   │   │   ├── reranker.py       # Oxford CEBM hierarchy re-ranker
-│   │   │   │   └── hallucination_grader.py # Self-RAG hallucination & grounding auditor
-│   │   │   └── tools/                # Autonomous Clinical Tools (LangChain @tool)
-│   │   │       ├── clinical_calculator.py # 2021 CKD-EPI eGFR, BMI, CHA2DS2, Wells PE
-│   │   │       ├── drug_interaction.py    # DDI screener & Black Box warnings
-│   │   │       ├── medical_db_tool.py     # Disease & Symptom Differential Diagnostic Tool
-│   │   │       ├── pubmed_tool.py         # Live NCBI PubMed & clinical trial repository
-│   │   │       └── guideline_tool.py      # WHO, AHA, ADA, GINA, NICE guidelines
-│   │   ├── routes/
-│   │   │   ├── agentic_pipeline.py   # /api/v1/agentic endpoints & tool APIs
-│   │   │   ├── medical_database.py   # /api/v1/database endpoints & symptom checker
-│   │   │   ├── medical_query.py      # /api/v1/medical-query with agent trace
-│   │   │   └── validate.py           # Typo validation endpoints
-│   │   ├── models/
-│   │   │   ├── enums.py              # UserMode, EvidenceLevel
-│   │   │   ├── medical_db_schemas.py # Disease, Symptom, Solution & Paper schemas
-│   │   │   └── schemas.py            # Pydantic request/response schemas
-│   │   └── main.py                   # FastAPI application
-│   ├── requirements.txt
-│   └── .env.example
-├── web/
-│   ├── src/
-│   │   ├── app/                      # Next.js App router
-│   │   ├── components/               # MedicalDatabaseExplorer, ClinicalCalculatorWidget, etc.
-│   │   ├── hooks/                    # useMedicalQuery, useQueryValidator
-│   │   └── lib/                      # API client, types, suggestions
-│   ├── package.json
-│   └── tsconfig.json
-├── tests/
-│   ├── test_agentic_workflow.py      # LangGraph workflow, tools, CRAG & Self-RAG tests
-│   ├── test_rag_engine.py            # RAG and Query Guard unit tests
-│   └── test_prompts.py               # Prompt routing tests
-├── docker-compose.yml
-├── README.md
-└── .gitignore
-```
 
 ---
 
