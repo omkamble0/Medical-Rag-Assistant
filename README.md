@@ -15,9 +15,9 @@
 
 ---
 
-## 📌 Executive Summary (For Recruiters & Technical Interviewers)
+## 📌 Summary 
 
-Unlike toy or tutorial RAG implementations that pass raw vectors to a chat model, **AegisMed is built as a hardened production truth system**:
+Unlike tutorial RAG implementations that pass raw vectors to a chat model, **AegisMed is built as a hardened production truth system**:
 
 | Engineering Pillar | Production Implementation |
 | :--- | :--- |
