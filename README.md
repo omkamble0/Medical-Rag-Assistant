@@ -35,83 +35,61 @@ Unlike toy or tutorial RAG implementations that pass raw vectors to a chat model
 ## 🏗️ System Architecture & Request Lifecycle
 
 ```mermaid
-flowchart TD
-    subgraph ClientLayer["1. Transport & Client Layer"]
-        UserQuery["Clinical Query / Symptom Narrative"] --> Route["FastAPI /api/v1/clinical/query"]
-        Route --> SecMid["Security Headers & HIPAA PII Scrubber"]
-        SecMid --> Tracing["Correlation ID & OpenTelemetry TraceSpan"]
-    end
-
-    subgraph OrchestratorLayer["2. Domain Orchestration (DIContainer)"]
-        Tracing --> Orchestrator["ClinicalOrchestrator"]
-        Orchestrator --> SafetyService["ClinicalSafetyService"]
-    end
-
-    subgraph SafetyGate["3. Deterministic Safety Interception"]
-        SafetyService --> RedFlagCheck{"Emergency Red Flag / Teratogen?"}
-        RedFlagCheck -- "CRITICAL EMERGENCY" --> EmergencyBypass["Immediate 911 / EMS Dispatch Guidance<br/>(0% Hallucination Risk + Escalation Ticket)"]
-        RedFlagCheck -- "CONTRAINDICATION" --> BlackBoxAlert["FDA Boxed Warning / NTI Surveillance Alert<br/>(Withhold Therapy + Escalation Ticket)"]
-        RedFlagCheck -- "SAFE / PROCEED" --> RetrievalGate["Proceed to Retrieval Pipeline"]
-    end
-
-    subgraph RetrievalEngine["4. Hybrid Clinical Evidence Engine"]
-        RetrievalGate --> BM25["Sparse BM25 Lexical Index"]
-        RetrievalGate --> DenseVec["Dense Semantic Vector Embeddings"]
-        BM25 & DenseVec --> RRF["Reciprocal Rank Fusion (k=60)"]
-        RRF --> Chunker["Medical Content Chunker<br/>(Section, CEBM Level, Contraindications)"]
-        Chunker --> Reranker["Clinical Evidence Reranker<br/>(Oxford CEBM Weighting: L1 x1.18, L2 x1.12, L5 x0.90)"]
-    end
-
-    subgraph TriageGate["5. Conservative Triage & Confidence Router"]
-        Reranker --> ConfidenceCheck{"Confidence Score >= 0.50?"}
-        ConfidenceCheck -- "No (Low Confidence)" --> RefusalPath["Conservative Clinical Refusal<br/>(Structured Clarifying Questions Generated)"]
-        ConfidenceCheck -- "Yes (Med / High)" --> LLMGateway["Unified LLM Gateway"]
-    end
-
-    subgraph LLMGatewayLayer["6. LLM Gateway & Audience Enforcement"]
-        LLMGateway --> ModelCascade["OpenAI / Groq / Gemini / Ollama / Local EBM Synthesizer"]
-        ModelCascade --> AudienceEnforcer["Audience Contract Enforcer"]
-        AudienceEnforcer --> PatientFormat["Patient Mode: Grade 6.0 + Analogies + Leak Sanitized"]
-        AudienceEnforcer --> DoctorFormat["Doctor Mode: GDMT + Dosages + CEBM Level Citations"]
-    end
-
-    subgraph EvaluationLayer["7. RAG Evaluation & Observability"]
-        PatientFormat & DoctorFormat --> RAGEval["ClinicalRagEvaluator"]
-        RAGEval --> Grounding["Groundedness Score & Hallucination Risk Audit"]
-        Grounding --> Metrics["Prometheus Metrics Registry (/metrics)"]
-        Metrics --> FinalResponse["StructuredMedicalResponse Payload"]
-    end
+flowchart LR
+    A["👤 User Query"] --> B["🔒 HIPAA & Tier-1 Safety Gate"]
+    B -- "Emergency / Contraindication" --> E1["🚨 911 / Black-Box Intercept"]
+    B -- "Safe" --> C["🔎 Hybrid Retrieval<br/>(BM25 + Dense + RRF)"]
+    C --> D{"Confidence >= 0.50?"}
+    D -- "No (Low)" --> E2["❓ Conservative Refusal<br/>& Clarifying Questions"]
+    D -- "Yes" --> E["🧠 Audience Synthesis<br/>& RAG Evaluator"]
+    E --> F["📋 Structured Response<br/>+ Prometheus Metrics"]
 ```
 
 ---
 
-## 💻 Tech Stack & Architectural Decisions
+## 💻 Tech Stack & Engineering Competencies
 
-### Backend & Core Services
-- **Language**: Python 3.10+ (tested through Python 3.14)
-- **API Framework**: **FastAPI** with asynchronous and synchronous multi-worker capabilities.
-- **Validation & Schemas**: **Pydantic v2** and **`pydantic-settings`** for strict runtime type-safety, environment configuration separation, and zero-overhead JSON serialization.
-- **Architectural Style**: Clean / Layered Architecture with Hexagonal interfaces and custom Inversion of Control (**Dependency Injection** via `DIContainer`).
+### 1. AI, RAG & LLM Engineering
+- **Retrieval Architecture**: Hybrid search pairing **Okapi BM25** sparse keyword indexing (`rank_bm25`) with **Dense Semantic Vector Similarity** (`Qdrant` vector storage and local embeddings).
+- **Ranking & Fusion**: **Reciprocal Rank Fusion (RRF, $k=60$)** mathematically combining multi-space candidate lists, weighted by **Oxford CEBM Hierarchy Multipliers** (Level 1 $\times 1.18$, Level 2 $\times 1.12$, Level 5 $\times 0.90$).
+- **Chunking Strategy**: Semantic clinical chunking by document section (`INDICATIONS`, `CONTRAINDICATIONS`, `DOSAGE AND ADMINISTRATION`, `ADVERSE REACTIONS`, `LANDMARK TRIALS`).
+- **Evaluation & Hallucination Auditing**: In-pipeline evaluation computing claim-level **Groundedness Score**, semantic **Answer Relevance**, **Citation Precision**, and **Hallucination Risk %**.
+- **LLM Gateway & Cascades**: Multi-provider failover across **OpenAI** (`gpt-4o`), **Groq** (`llama-3.3-70b`), **Google Gemini** (`gemini-flash`), **Ollama** (local private models), and a zero-dependency deterministic **Local EBM Clinical Synthesizer**.
+- **Agentic Workflows**: Corrective RAG (**CRAG**) and Self-Reflective RAG (**Self-RAG**) patterns with MeSH query expansion and dynamic retrieval grading.
 
-### Retrieval-Augmented Generation (RAG)
-- **Hybrid Retrieval**: Okapi BM25 sparse keyword index (`rank_bm25` algorithm) + Dense semantic vector similarity (`Qdrant` vector storage & memory embeddings).
-- **Ranking Algorithm**: Reciprocal Rank Fusion (**RRF**) combining rank lists from sparse and dense spaces, modulated by Oxford Centre for Evidence-Based Medicine (**CEBM**) hierarchy multipliers.
-- **Chunking Strategy**: Semantic clinical chunking by section (`INDICATIONS`, `CONTRAINDICATIONS`, `DOSAGE AND ADMINISTRATION`, `ADVERSE REACTIONS`, `LANDMARK TRIALS`).
-- **RAG Evaluation**: Self-contained evaluators measuring claim-level groundedness, semantic query relevance, citation precision, and hallucination risk percentages.
+### 2. Backend & System Architecture
+- **Language**: Python 3.10+ (tested through Python 3.14).
+- **API Framework**: **FastAPI** with both asynchronous non-blocking routes and synchronous worker endpoints.
+- **Data Validation & Typing**: **Pydantic v2** and **`pydantic-settings`** for strict runtime type enforcement, environment separation, and high-performance serialization.
+- **Architectural Pattern**: **Clean / Hexagonal Architecture** with decoupled interfaces (`RetrieverInterface`, `LLMProviderInterface`, `SafetyGuardrailInterface`, `ClinicalToolInterface`, `CacheBackendInterface`) wired via a central Inversion of Control container (`DIContainer`).
 
-### GenAI & Multi-Provider LLM Gateway
-- **Multi-Provider Cascade**: Automatic failover across **OpenAI** (`gpt-4o`), **Groq** (`llama-3.3-70b`), **Google Gemini** (`gemini-flash`), **Ollama** (local private models), and a zero-dependency deterministic **Local EBM Clinical Synthesizer**.
-- **Mock LLM Engine**: Deterministic `MockClinicalLLMProvider` for isolated, hermetic unit testing and CI/CD pipelines without network or API costs.
+### 3. Healthcare Informatics & Clinical Safety
+- **Medical Ontologies**: MeSH taxonomy mapping, ICD-10 nosology, and Oxford CEBM evidence grading.
+- **Autonomous Clinical Calculators**: Race-free 2021 CKD-EPI eGFR, CURB-65 Pneumonia Severity, CHA2DS2-VASc Stroke Risk in AFib, Wells PE Criteria, and BMI/GLP-1 eligibility.
+- **Clinical Safety Rules**:
+  - *Tier-1 Emergency Interception*: Halts generation for acute coronary syndrome, stroke (FAST), stridor/anaphylaxis, and massive hemorrhage.
+  - *Teratogen Black-Box Surveillance*: Blocks ACEi/ARBs, methotrexate, and statins during pregnancy.
+  - *Narrow Therapeutic Index (NTI)*: Surveillance for Warfarin, Lithium, Digoxin, and Theophylline.
+  - *Age-Specific Protocols*: Pediatric Aspirin prohibition (Reye's syndrome rule) and AGS Beers Criteria warnings for seniors.
+  - *Renal Cutoffs*: Automatic contraindication alerts for Metformin (eGFR $< 30$ mL/min) and NSAIDs in CKD Stage 4/5.
 
-### Observability, Compliance & Security
-- **Security**: **HIPAA Safe Harbor** automated PII/PHI de-identification engine (`scrub_pii`) stripping SSNs, MRNs, phone numbers, emails, and DOBs before retrieval or model ingestion. Security headers middleware (CSP, HSTS, X-Content-Type-Options).
-- **Metrics**: Real-time thread-safe `MetricsRegistry` with Prometheus exposition format available at `/metrics` (request counts, latency p50/p95/p99, safety trigger counters, fallback events).
-- **Tracing**: OpenTelemetry-compatible `TraceSpan` context propagation with `X-Correlation-ID` header tracking.
-- **Human-in-the-Loop**: Escalation ticketing service (`ClinicalEscalationService`) for clinical review and audit logging.
+### 4. Security, Privacy & Compliance
+- **HIPAA Safe Harbor De-Identification**: Automated PHI/PII scrubbing engine (`scrub_pii`) sanitizing SSNs, MRNs, phone numbers, email addresses, and dates of birth prior to vector indexing or LLM processing.
+- **API Hardening**: Security headers middleware (Strict-Transport-Security, Content-Security-Policy, X-Frame-Options, X-Content-Type-Options).
 
-### Frontend
-- **Framework**: **Next.js 14** (App Router), **React 18**, **TypeScript**.
-- **Styling & UI**: Tailwind CSS, Lucide icons, accessible interactive clinical calculator widgets, dynamic audience mode switcher, and live evidence inspection drawers.
+### 5. Observability & DevOps
+- **Metrics**: Thread-safe `MetricsRegistry` with standard Prometheus exposition format available at `/metrics` (request counts, latency p50/p95/p99, safety trigger counters, fallback events).
+- **Distributed Tracing**: OpenTelemetry-compatible `TraceSpan` context propagation with `X-Correlation-ID` header tracking across service boundaries.
+- **Structured Logging**: JSON logging with request correlation IDs and user-mode context variables.
+- **Deployment**: Docker containerization (`docker-compose.yml`) for reproducible cloud or on-prem deployment.
+
+### 6. Frontend & Full-Stack Development
+- **Framework**: **Next.js 14** (App Router), **React 18**, **TypeScript 5.0+**.
+- **UI & State**: Tailwind CSS, Lucide icons, accessible interactive clinical calculator widgets, dynamic patient vs. doctor audience toggle, and interactive citation badges.
+
+### 7. Software Quality & Testing
+- **Test Framework**: `pytest` and Python `unittest`.
+- **Rigor**: **96 automated unit, integration, and clinical benchmark tests** passing hermetically in $< 11$ seconds with zero external network or API key dependencies.
 
 ---
 
@@ -301,18 +279,6 @@ The primary production clinical reasoning endpoint.
   "latency_ms": 118.4
 }
 ```
-
----
-
-## 💼 Skills Demonstrated (For Resume & Hiring Teams)
-
-- **AI/LLM Engineering**: Agentic RAG, Corrective RAG (CRAG), Self-Reflective RAG (Self-RAG), Okapi BM25, Dense Vector Embeddings, Reciprocal Rank Fusion (RRF), Multi-provider LLM gateway, Hallucination Auditing.
-- **Backend Architecture**: Clean Architecture, Layered Architecture, Dependency Injection (IoC), Interface-driven design, Pydantic v2, FastAPI asynchronous processing, thread-safe registries.
-- **Healthcare & Clinical Informatics**: Medical terminology, MeSH taxonomy, Oxford CEBM evidence grading, Clinical risk calculators (CKD-EPI 2021, CURB-65, CHA2DS2-VASc, Wells Criteria), DDI screening, Teratogenicity, Beers criteria, Reye's syndrome contraindications.
-- **Security & Compliance**: HIPAA Safe Harbor PHI de-identification, regex-based PII scrubbing, secure headers middleware.
-- **DevOps & Production Operations**: Prometheus instrumentation, OpenTelemetry distributed tracing, correlation IDs, structured JSON logging, Docker containerization.
-- **Full-Stack Development**: Next.js 14 App Router, React 18, TypeScript, Tailwind CSS, REST API integration.
-- **Software Quality & Testing**: 96+ deterministic unit/integration tests (`pytest`), hermetic benchmark test harness, zero-flakiness mocking.
 
 ---
 
