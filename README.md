@@ -10,7 +10,9 @@
 [![Compliance](https://img.shields.io/badge/Compliance-HIPAA%20Safe%20Harbor-green.svg)]()
 [![Evidence Standard](https://img.shields.io/badge/Evidence-Oxford%20CEBM%20Levels%201--5-purple.svg)]()
 [![Observability](https://img.shields.io/badge/Observability-Prometheus%20%2B%20OpenTelemetry-red.svg)]()
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Online%20on%20Render-brightgreen.svg?logo=render)](https://medical-rag-assistant-2qj0.onrender.com)
 
+> 🚀 **Live Interactive Demo**: [**medical-rag-assistant-2qj0.onrender.com**](https://medical-rag-assistant-2qj0.onrender.com)  
 > **AegisMed** is an enterprise-grade Clinical Retrieval-Augmented Generation (RAG) and Medical Decision Support System built for mission-critical clinical safety, evidence-based grounding, and zero-hallucination guardrails.
 
 ---
@@ -90,9 +92,9 @@ uvicorn api.app.main:app --host 0.0.0.0 --port 8000 --reload
 cd web && npm install && npm run dev
 ```
 
-- **Interactive UI**: `http://localhost:3000`
-- **Swagger / OpenAPI**: `http://localhost:8000/docs`
-- **Prometheus Metrics**: `http://localhost:8000/metrics`
+- **Live Interactive UI**: [medical-rag-assistant-2qj0.onrender.com](https://medical-rag-assistant-2qj0.onrender.com)
+- **Swagger / OpenAPI Docs**: [medical-rag-assistant-2qj0.onrender.com/docs](https://medical-rag-assistant-2qj0.onrender.com/docs)
+- **Prometheus Metrics**: [medical-rag-assistant-2qj0.onrender.com/metrics](https://medical-rag-assistant-2qj0.onrender.com/metrics)
 
 ---
 
