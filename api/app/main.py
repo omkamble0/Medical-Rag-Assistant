@@ -8,9 +8,10 @@ API_ROOT = Path(__file__).resolve().parent.parent
 if str(API_ROOT) not in sys.path:
     sys.path.insert(0, str(API_ROOT))
 
-from fastapi import FastAPI  # type: ignore # pyrefly: ignore
+from fastapi import FastAPI, HTTPException  # type: ignore # pyrefly: ignore
 from fastapi.middleware.cors import CORSMiddleware  # type: ignore # pyrefly: ignore
-from fastapi.responses import PlainTextResponse  # type: ignore # pyrefly: ignore
+from fastapi.responses import PlainTextResponse, FileResponse  # type: ignore # pyrefly: ignore
+from fastapi.staticfiles import StaticFiles  # type: ignore # pyrefly: ignore
 
 from app.config import settings  # type: ignore # pyrefly: ignore
 from app.core.logging import setup_structured_logging
@@ -69,8 +70,10 @@ app.include_router(encyclopedia_router)
 app.include_router(taxonomy_router)
 app.include_router(audit_router)
 
-@app.get("/")
-async def root():
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+@app.get("/api")
+async def api_info():
     return {
         "message": "Welcome to AegisMed Clinical Truth Engine API",
         "version": "2.0.0",
@@ -79,6 +82,34 @@ async def root():
         "metrics": "/metrics",
         "structured_query": f"{settings.API_V1_STR}/clinical/query"
     }
+
+if STATIC_DIR.exists() and (STATIC_DIR / "index.html").exists():
+    if (STATIC_DIR / "_next").exists():
+        app.mount("/_next", StaticFiles(directory=str(STATIC_DIR / "_next")), name="next_static")
+
+    @app.get("/", include_in_schema=False)
+    async def serve_spa_root():
+        return FileResponse(str(STATIC_DIR / "index.html"))
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str):
+        if full_path.startswith(("api", "docs", "redoc", "openapi.json", "metrics")):
+            raise HTTPException(status_code=404, detail="Not Found")
+        file_path = STATIC_DIR / full_path
+        if file_path.is_file():
+            return FileResponse(str(file_path))
+        return FileResponse(str(STATIC_DIR / "index.html"))
+else:
+    @app.get("/")
+    async def root():
+        return {
+            "message": "Welcome to AegisMed Clinical Truth Engine API",
+            "version": "2.0.0",
+            "docs": "/docs",
+            "health": f"{settings.API_V1_STR}/health",
+            "metrics": "/metrics",
+            "structured_query": f"{settings.API_V1_STR}/clinical/query"
+        }
 
 if __name__ == "__main__":
     import uvicorn

@@ -188,7 +188,7 @@ export function ResearchRecommendationDeck({
               <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-50/60 via-purple-50/30 to-white border border-indigo-100">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-900 mb-3 flex items-center gap-2">
                   <HelpCircle className="w-4 h-4 text-indigo-600" />
-                  <span>Important Questions to Bring to Your Doctor's Appointment</span>
+                  <span>Important Questions to Bring to Your Doctor&apos;s Appointment</span>
                 </h4>
                 <div className="space-y-2">
                   {(data as PatientResearchRecommendation).questions_for_doctor.map((q, idx) => (

@@ -36,7 +36,7 @@ class TestResearchRecommendations(unittest.TestCase):
     def test_patient_research_recommendations_endpoint(self):
         """Test research recommendations for patient audience."""
         req = ResearchRecommendationRequest(condition="hypertension", audience="patient", max_results=4)
-        data = asyncio.run(get_research_recommendations(req))
+        data = get_research_recommendations(req)
         self.assertEqual(data["status"], "ok")
         self.assertEqual(data["audience"], "patient")
         self.assertIn("Grade 6.0", data["reading_level"])
@@ -49,7 +49,7 @@ class TestResearchRecommendations(unittest.TestCase):
     def test_doctor_research_recommendations_endpoint(self):
         """Test research recommendations for doctor / clinician audience."""
         req = ResearchRecommendationRequest(condition="Type 2 Diabetes", audience="clinician", max_results=4)
-        data = asyncio.run(get_research_recommendations(req))
+        data = get_research_recommendations(req)
         self.assertEqual(data["status"], "ok")
         # Should be normalized from 'clinician' to 'doctor'
         self.assertEqual(data["audience"], "doctor")
