@@ -12,7 +12,7 @@
 [![Observability](https://img.shields.io/badge/Observability-Prometheus%20%2B%20OpenTelemetry-red.svg)]()
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Online%20on%20Render-brightgreen.svg?logo=render)](https://medical-rag-assistant-2qj0.onrender.com)
 
-> 🚀 **Live Interactive Demo**: [**medical-rag-assistant-2qj0.onrender.com**](https://medical-rag-assistant-2qj0.onrender.com)  
+> 🚀 **Live Interactive Demo**: https://clinical-help-recommendation-assistant.onrender.com/
 > **AegisMed** is an enterprise-grade Clinical Retrieval-Augmented Generation (RAG) and Medical Decision Support System built for mission-critical clinical safety, evidence-based grounding, and zero-hallucination guardrails.
 
 ---
