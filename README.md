@@ -96,6 +96,8 @@ cd web && npm install && npm run dev
 - **Swagger / OpenAPI Docs**: [medical-rag-assistant-2qj0.onrender.com/docs](https://medical-rag-assistant-2qj0.onrender.com/docs)
 - **Prometheus Metrics**: [medical-rag-assistant-2qj0.onrender.com/metrics](https://medical-rag-assistant-2qj0.onrender.com/metrics)
 
+*Direct link  - https://clinical-help-recommendation-assistant.onrender.com/
+
 ---
 
 ## 📄 License & Disclaimer
