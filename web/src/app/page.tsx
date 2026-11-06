@@ -16,23 +16,18 @@ import {
   ShieldCheck,
   Sparkles,
   RefreshCw,
-  Columns3,
-  Flame,
-  Globe2,
   X,
   ChevronRight,
   HeartPulse,
-  Award,
-  CheckCircle2,
   ArrowLeft,
   BookOpen,
-  SlidersHorizontal,
-  Clock,
-  Layers,
-  Wand2,
   Calculator,
-  Compass,
-  ArrowRight
+  ArrowRight,
+  Columns3,
+  CheckCircle2,
+  Lock,
+  ExternalLink,
+  Activity
 } from "lucide-react";
 import { ClinicalCalculatorWidget } from "@/components/clinical-calculator-widget";
 import { ClinicalGovernanceAudit } from "@/components/clinical-governance-audit";
@@ -50,11 +45,10 @@ export default function Home() {
   const [patientResult, setPatientResult] = useState<SearchResponse | null>(null);
   const [showCalculator, setShowCalculator] = useState<boolean>(false);
   const [showAuditGovernance, setShowAuditGovernance] = useState<boolean>(false);
-  
-  // Primary Workspace View: 'wiki' | 'assistant' | 'split'
+
+  // Primary Workspace View: 'assistant' | 'wiki' | 'split'
   const [primaryView, setPrimaryView] = useState<"assistant" | "wiki" | "split">("assistant");
   const [selectedWikiTopicId, setSelectedWikiTopicId] = useState<string>("DOC-CARD-001");
-  const [searchTarget, setSearchTarget] = useState<"all" | "wiki" | "assistant">("all");
 
   // Autocomplete state
   const [isFocused, setIsFocused] = useState(false);
@@ -74,24 +68,15 @@ export default function Home() {
       .catch((err) => console.debug("Taxonomy stats notice:", err));
   }, []);
 
-  const searchPlaceholder =
-    searchTarget === "wiki"
-      ? "Search 600 Wiki articles or 133,000+ CMS & WHO ICD codes..."
-      : searchTarget === "assistant"
-      ? "Ask AI Clinical Assistant any diagnostic or clinical query..."
-      : mode === "patient"
-      ? "Describe your symptoms or ask a health question..."
-      : "Search clinical guidelines, trials, or treatment protocols...";
-
-  // Update suggestions & taxonomy matches when query changes
+  // Update suggestions when query changes
   useEffect(() => {
-    const list = getMatchingSuggestions(query, 6);
+    const list = getMatchingSuggestions(query, 5);
     setFilteredSuggestions(list);
     setSelectedIndex(-1);
 
     if (query.trim().length >= 2) {
       const timer = setTimeout(() => {
-        searchClinicalTaxonomy(query.trim(), undefined, 4)
+        searchClinicalTaxonomy(query.trim(), undefined, 3)
           .then((res) => setTaxonomyResults(res.results || []))
           .catch(() => setTaxonomyResults([]));
       }, 120);
@@ -117,49 +102,47 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Preset popular conditions
-  const popularPills = [
-    { label: "High Blood Pressure", query: "What are the first-line treatments and DASH diet guidelines for high blood pressure?", badge: "WHO / AHA", icon: "❤️" },
-    { label: "Diabetes & GLP-1", query: "Semaglutide cardiovascular outcomes and titration schedule in Type 2 Diabetes", badge: "ADA / WHO", icon: "🩸" },
-    { label: "Asthma Inhalers", query: "What is the recommended inhaler approach for mild to moderate asthma?", badge: "GINA / WHO", icon: "🫁" },
-    { label: "Cholesterol & Statins", query: "Are statin side effects dangerous and what are the alternatives for high cholesterol?", badge: "ESC / AHA", icon: "💊" },
-    { label: "Anxiety & Mood", query: "What are the best evidence-based treatments for chronic anxiety and panic disorders?", badge: "NICE / WHO", icon: "🕊️" },
-    { label: "COVID & Antivirals", query: "Paxlovid antiviral efficacy and timing in high-risk COVID-19 patients", badge: "CDC / WHO", icon: "🛡️" },
-    { label: "Emergency Triage", query: "I have severe crushing chest pain, cold sweats, and cannot breathe", badge: "Safety Check", icon: "🚨" },
+  // Curated prominent queries for instant demonstration
+  const featuredQueries = [
+    {
+      title: "Hypertension Guidelines",
+      subtitle: "First-line therapies with renal protection (microalbuminuria)",
+      query: "What are the first-line medication options for stage 2 hypertension with microalbuminuria?",
+      tag: "ACC/AHA",
+      icon: "💊"
+    },
+    {
+      title: "Chest Pain Triage",
+      subtitle: "Crushing substernal pressure with left arm radiation",
+      query: "I have severe crushing substernal chest pain, cold sweats, and difficulty breathing",
+      tag: "Emergency Check",
+      icon: "🚨"
+    },
+    {
+      title: "Diabetes & GLP-1/SGLT2i",
+      subtitle: "Cardiorenal risk reduction and titration schedule",
+      query: "Semaglutide cardiovascular outcomes and titration schedule in Type 2 Diabetes",
+      tag: "ADA 2024",
+      icon: "🩸"
+    },
+    {
+      title: "Asthma Controller Therapy",
+      subtitle: "GINA guidelines on SMART regimen for mild-to-moderate asthma",
+      query: "What is the recommended inhaler approach for mild to moderate asthma?",
+      tag: "GINA",
+      icon: "🫁"
+    }
   ];
 
-  // Navigation handlers for Medical Wiki integration
   const handleOpenWikiTopic = (topicIdOrName: string) => {
     setSelectedWikiTopicId(topicIdOrName);
     setPrimaryView("wiki");
     setIsFocused(false);
   };
 
-  const handleOpenWikiSplit = (topicIdOrName: string, queryForAssistant?: string) => {
-    setSelectedWikiTopicId(topicIdOrName);
-    setPrimaryView("split");
-    setIsFocused(false);
-    if (queryForAssistant) {
-      setQuery(queryForAssistant);
-      handleSearch(queryForAssistant);
-    }
-  };
-
   const handleSearch = async (overrideQuery?: string, targetMode?: UserMode) => {
     const q = overrideQuery || query;
     if (!q.trim()) return;
-
-    // If searchTarget is specifically 'wiki', navigate directly to matching topic
-    if (searchTarget === "wiki") {
-      const clean = q.toLowerCase().trim();
-      const matched = filteredSuggestions.find(
-        (s) => s.label.toLowerCase().includes(clean) || clean.includes(s.label.toLowerCase())
-      );
-      if (matched) {
-        handleOpenWikiTopic(matched.id.replace("sug-", ""));
-        return;
-      }
-    }
 
     setPrimaryView("assistant");
     setIsFocused(false);
@@ -187,11 +170,7 @@ export default function Home() {
   const handleSelectSuggestion = (sug: SearchSuggestion) => {
     setQuery(sug.query);
     setIsFocused(false);
-    if (searchTarget === "wiki") {
-      handleOpenWikiTopic(sug.id.replace("sug-", ""));
-    } else {
-      handleSearch(sug.query);
-    }
+    handleSearch(sug.query);
   };
 
   const handleClearTopic = () => {
@@ -200,6 +179,7 @@ export default function Home() {
     setQuery("");
     setIsFocused(false);
     setActiveCitation(null);
+    setPrimaryView("assistant");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -231,101 +211,102 @@ export default function Home() {
 
   const activeQueryText = result?.query || patientResult?.query || query;
 
-  // Real-time matching against 600 verified wiki topics
-  const matchedWikiTopic = React.useMemo(() => {
-    if (!activeQueryText || !activeQueryText.trim()) return null;
-    const clean = activeQueryText.toLowerCase().trim();
-    let found = filteredSuggestions.find((s) => s.label.toLowerCase() === clean);
-    if (found) return found;
-    found = filteredSuggestions.find(
-      (s) => s.label.toLowerCase().includes(clean) || clean.includes(s.label.toLowerCase())
-    );
-    return found || null;
-  }, [activeQueryText, filteredSuggestions]);
-
   return (
-    <main className="min-h-screen bg-[#F6F8FB] text-slate-900 pb-24">
-      {/* Top Clean Header */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-2xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-18 flex items-center justify-between gap-4">
-          {/* Logo & Platform Tagline */}
-          <div 
-            className="flex items-center gap-3 cursor-pointer select-none"
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+      {/* ================= REFINED TOP NAVBAR ================= */}
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/70">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+          {/* Brand Logo */}
+          <div
             onClick={handleClearTopic}
-            title="Return to AegisMed Home"
+            className="flex items-center gap-2.5 cursor-pointer select-none group"
           >
-            <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-500 text-white shadow-sm shadow-indigo-200">
-              <HeartPulse className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-xs group-hover:bg-indigo-600 transition-colors">
+              <HeartPulse className="w-5 h-5 text-indigo-400 group-hover:text-white transition-colors" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold tracking-tight text-slate-900">
-                  AegisMed
-                </h1>
-                <span className="px-2 py-0.5 text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full hidden xs:inline-block">
-                  Evidence-Based Clinical Engine
+                <span className="text-base font-extrabold tracking-tight text-slate-900">AegisMed</span>
+                <span className="text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                  Clinical AI
                 </span>
               </div>
-              <p className="text-xs text-slate-500 hidden sm:block">
-                {taxonomyStats?.total_conditions
-                  ? `${taxonomyStats.total_conditions.toLocaleString()} CMS & WHO Clinical Conditions • 600 Rich Monographs`
-                  : "133,000+ CMS & WHO Conditions • 600 Rich Monographs"}
-              </p>
             </div>
           </div>
 
-          {/* Primary View Switcher & Audience Controls */}
+          {/* Center Navigation Tabs */}
+          <nav className="hidden md:flex items-center gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/60">
+            <button
+              type="button"
+              onClick={() => {
+                setPrimaryView("assistant");
+                setShowCalculator(false);
+                setShowAuditGovernance(false);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                primaryView === "assistant" && !showCalculator && !showAuditGovernance
+                  ? "bg-white text-slate-900 shadow-xs font-bold"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              <span>AI Assistant</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setPrimaryView("wiki");
+                setShowCalculator(false);
+                setShowAuditGovernance(false);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                primaryView === "wiki" && !showCalculator && !showAuditGovernance
+                  ? "bg-white text-slate-900 shadow-xs font-bold"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5 text-slate-500" />
+              <span>Medical Library</span>
+              <span className="text-[10px] px-1 rounded bg-slate-200/80 text-slate-700">600</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowCalculator(!showCalculator);
+                setShowAuditGovernance(false);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                showCalculator
+                  ? "bg-white text-slate-900 shadow-xs font-bold"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Calculator className="w-3.5 h-3.5 text-slate-500" />
+              <span>Calculators</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowAuditGovernance(!showAuditGovernance);
+                setShowCalculator(false);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                showAuditGovernance
+                  ? "bg-white text-slate-900 shadow-xs font-bold"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Safety & Audit</span>
+            </button>
+          </nav>
+
+          {/* Right Mode Toggle */}
           <div className="flex items-center gap-2">
-            {/* Primary Workspace View Switcher */}
-            <div className="flex items-center gap-1 bg-slate-100/90 p-1 rounded-2xl border border-slate-200">
-              <button
-                type="button"
-                onClick={() => setPrimaryView("assistant")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                  primaryView === "assistant"
-                    ? "bg-white text-indigo-700 shadow-xs border border-slate-200/80"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-                title="Interactive AI Clinical Assistant"
-              >
-                <Sparkles className="w-4 h-4 text-indigo-600" />
-                <span>AI Assistant</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPrimaryView("wiki")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                  primaryView === "wiki"
-                    ? "bg-white text-indigo-700 shadow-xs border border-slate-200/80"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-                title="Primary Medical Wiki & Clinical Compendium (600 Topics)"
-              >
-                <BookOpen className="w-4 h-4 text-indigo-600" />
-                <span>Medical Wiki</span>
-                <span className="hidden xs:inline-block text-[10px] font-extrabold px-1.5 py-0.2 bg-indigo-100 text-indigo-800 rounded-md">
-                  600
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPrimaryView("split")}
-                className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                  primaryView === "split"
-                    ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-xs"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-                title="Open Medical Wiki on Left and AI Chat Assistant on Right"
-              >
-                <Columns3 className="w-4 h-4" />
-                <span>Co-Pilot Split</span>
-              </button>
-            </div>
-
-            {/* Audience Perspective Selector */}
-            <div className="hidden sm:flex items-center gap-1 bg-slate-100/90 p-1 rounded-2xl border border-slate-200">
+            <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200/80">
               <button
                 type="button"
                 onClick={() => {
@@ -333,17 +314,15 @@ export default function Home() {
                   setMode("patient");
                   if (result) handleSearch(query, "patient");
                 }}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
                   !compareMode && mode === "patient"
-                    ? "bg-white text-indigo-700 shadow-xs border border-slate-200/80"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-white text-indigo-700 shadow-2xs font-bold"
+                    : "text-slate-500 hover:text-slate-900"
                 }`}
-                title="Patient & Family plain-language register"
               >
-                <HeartHandshake className="w-3.5 h-3.5 text-indigo-600" />
+                <HeartHandshake className="w-3.5 h-3.5" />
                 <span>Patient</span>
               </button>
-
               <button
                 type="button"
                 onClick={() => {
@@ -351,166 +330,64 @@ export default function Home() {
                   setMode("professional");
                   if (result) handleSearch(query, "professional");
                 }}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
                   !compareMode && mode === "professional"
-                    ? "bg-white text-teal-700 shadow-xs border border-slate-200/80"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-white text-teal-700 shadow-2xs font-bold"
+                    : "text-slate-500 hover:text-slate-900"
                 }`}
-                title="Clinician post-graduate medical register"
               >
-                <Stethoscope className="w-3.5 h-3.5 text-teal-600" />
+                <Stethoscope className="w-3.5 h-3.5" />
                 <span>Clinician</span>
               </button>
             </div>
-
-            {/* Clinical Calculator Button */}
-            <button
-              type="button"
-              onClick={() => {
-                setShowCalculator(!showCalculator);
-                if (!showCalculator) setShowAuditGovernance(false);
-              }}
-              className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-                showCalculator
-                  ? "bg-indigo-900 text-indigo-300 shadow-sm border border-indigo-700"
-                  : "bg-white text-slate-700 hover:text-slate-900 border border-slate-200"
-              }`}
-              title="Open Clinical Calculators & Drug Interaction Suite"
-            >
-              <Calculator className="w-3.5 h-3.5 text-indigo-500" />
-              <span className="hidden sm:inline">Calculators</span>
-            </button>
-
-            {/* Clinical Audit & Safety Governance Button */}
-            <button
-              type="button"
-              onClick={() => {
-                setShowAuditGovernance(!showAuditGovernance);
-                if (!showAuditGovernance) setShowCalculator(false);
-              }}
-              className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-                showAuditGovernance
-                  ? "bg-teal-900 text-teal-300 shadow-sm border border-teal-700"
-                  : "bg-white text-slate-700 hover:text-slate-900 border border-slate-200"
-              }`}
-              title="View FDA SaMD & HIPAA Clinical Decision Support Audit Trail"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
-              <span className="hidden sm:inline">Audit & Safety</span>
-            </button>
           </div>
         </div>
       </header>
 
-      {/* Interactive Clinical Calculator & DDI Suite */}
+      {/* ================= POPUP MODALS: CALCULATOR & AUDIT ================= */}
       {showCalculator && (
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4 animate-fade-in">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-6 animate-fade-in">
           <ClinicalCalculatorWidget onClose={() => setShowCalculator(false)} />
         </div>
       )}
 
-      {/* Clinical Governance & SaMD Audit Trail Dashboard */}
       {showAuditGovernance && (
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4 animate-fade-in">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-6 animate-fade-in">
           <ClinicalGovernanceAudit onClose={() => setShowAuditGovernance(false)} />
         </div>
       )}
 
-      {/* Main Search & Hero Section */}
-      {!hasTopic && primaryView === "assistant" ? (
-        /* ================= LANDING HERO VIEW (Assistant Mode) ================= */
-        <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 pb-8 text-center animate-fade-in">
-          {/* Trust Banner Pill */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-50 border border-teal-200/80 text-teal-800 text-xs font-semibold shadow-2xs mb-4">
-            <ShieldCheck className="w-4 h-4 text-teal-600" />
-            <span>Grounded in ACC/AHA, ESC, ADA & WHO Guidelines • Zero-Hallucination Safe</span>
+      {/* ================= LANDING HERO (Clean, Premium, Authoritative) ================= */}
+      {!hasTopic && primaryView === "assistant" && !showCalculator && !showAuditGovernance ? (
+        <section className="max-w-3xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 pb-16 text-center animate-fade-in">
+          {/* Subtle Trust Pill */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium mb-6">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Grounded in Peer-Reviewed Medical Guidelines (ACC/AHA, ESC, ADA, GINA)</span>
           </div>
 
-          {/* Clean Modern Headline */}
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight mb-3">
-            Clinical AI Guidance You Can Trust
-          </h2>
-          <p className="text-slate-600 text-sm sm:text-base max-w-2xl mx-auto mb-8 leading-relaxed">
-            Get instant, evidence-based answers to health questions with verified clinical citations, drug interaction checks, and patient-safe explanations.
+          {/* Authoritative Main Headline */}
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight mb-4">
+            Medical answers, <br className="hidden sm:inline" />
+            <span className="bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
+              verified by evidence.
+            </span>
+          </h1>
+
+          <p className="text-slate-600 text-base sm:text-lg max-w-xl mx-auto mb-10 leading-relaxed">
+            Consult the AI clinical engine with zero hallucinations. Every response provides Oxford CEBM citation traceability, dosage thresholds, and drug safety checks.
           </p>
 
-          {/* Mode Selector Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto mb-5 text-left">
-            <button
-              type="button"
-              onClick={() => {
-                setCompareMode(false);
-                setMode("patient");
-              }}
-              className={`p-3.5 rounded-2xl border-2 transition-all flex items-start gap-3 ${
-                !compareMode && mode === "patient"
-                  ? "bg-white border-indigo-600 shadow-md ring-4 ring-indigo-50"
-                  : "bg-white/80 border-slate-200 hover:border-slate-300 text-slate-600"
-              }`}
-            >
-              <div className={`p-2 rounded-xl shrink-0 ${
-                !compareMode && mode === "patient" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600"
-              }`}>
-                <HeartHandshake className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-slate-900">Patient & Family Mode</span>
-                  {!compareMode && mode === "patient" && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800">
-                      Active
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-slate-500 mt-0.5 leading-snug">
-                  Everyday English, clear analogies, and practical questions to ask your doctor.
-                </p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setCompareMode(false);
-                setMode("professional");
-              }}
-              className={`p-3.5 rounded-2xl border-2 transition-all flex items-start gap-3 ${
-                !compareMode && mode === "professional"
-                  ? "bg-white border-teal-600 shadow-md ring-4 ring-teal-50"
-                  : "bg-white/80 border-slate-200 hover:border-slate-300 text-slate-600"
-              }`}
-            >
-              <div className={`p-2 rounded-xl shrink-0 ${
-                !compareMode && mode === "professional" ? "bg-teal-600 text-white" : "bg-slate-100 text-slate-600"
-              }`}>
-                <Stethoscope className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-slate-900">Clinician Mode</span>
-                  {!compareMode && mode === "professional" && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-100 text-teal-800">
-                      Active
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-slate-500 mt-0.5 leading-snug">
-                  Guideline-Directed Medical Therapy (GDMT), pharmacology, and trial statistics.
-                </p>
-              </div>
-            </button>
-          </div>
-
-          {/* Main Search Input */}
-          <div className="relative max-w-3xl mx-auto mb-6">
+          {/* Floating Search Input Card */}
+          <div className="relative mb-8 text-left">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSearch();
               }}
-              className="relative flex items-center w-full h-15 sm:h-16 bg-white rounded-2xl border-2 border-slate-200/90 focus-within:border-indigo-600 focus-within:ring-4 focus-within:ring-indigo-100 shadow-lg shadow-slate-100 transition-all"
+              className="relative flex items-center w-full h-16 bg-white rounded-2xl border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-50/80 transition-all"
             >
-              <div className="absolute left-4.5 flex items-center pointer-events-none text-slate-400">
+              <div className="pl-5 text-slate-400">
                 <Search className="w-5 h-5" />
               </div>
 
@@ -523,10 +400,10 @@ export default function Home() {
                 onKeyDown={handleKeyDown}
                 placeholder={
                   mode === "patient"
-                    ? "Ask any health question or describe symptoms (e.g. stage 2 high blood pressure)..."
-                    : "Enter diagnostic query, GDMT protocol, or contraindication check..."
+                    ? "Ask in plain English (e.g. Stage 2 high blood pressure with kidney protection)..."
+                    : "Enter diagnostic query, GDMT titration, or contraindication check..."
                 }
-                className="w-full h-full pl-13 pr-32 sm:pr-36 bg-transparent text-slate-900 placeholder:text-slate-400 text-sm sm:text-base outline-none font-normal"
+                className="w-full h-full pl-3.5 pr-36 bg-transparent text-slate-900 placeholder:text-slate-400 text-sm sm:text-base outline-none"
               />
 
               <div className="absolute right-2.5 flex items-center gap-1.5">
@@ -537,8 +414,7 @@ export default function Home() {
                       setQuery("");
                       inputRef.current?.focus();
                     }}
-                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
-                    title="Clear input"
+                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -547,77 +423,59 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={loading || !query.trim()}
-                  className="px-5 sm:px-6 py-2.5 h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 active:scale-98 text-white font-bold text-xs sm:text-sm tracking-wide transition-all shadow-md shadow-indigo-200 disabled:opacity-50 flex items-center gap-2"
+                  className="px-5 py-2.5 h-11 rounded-xl bg-slate-900 hover:bg-indigo-600 text-white font-semibold text-xs sm:text-sm tracking-wide transition-all shadow-xs disabled:opacity-40 flex items-center gap-2"
                 >
                   {loading ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Searching...</span>
-                    </>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
                   ) : (
                     <>
-                      <Sparkles className="w-4 h-4" />
-                      <span>Consult AI</span>
+                      <span>Ask AI</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </>
                   )}
                 </button>
               </div>
             </form>
 
-            {/* Clean Autocomplete Dropdown */}
+            {/* Autocomplete Dropdown */}
             {isFocused && (filteredSuggestions.length > 0 || taxonomyResults.length > 0) && (
               <div
                 ref={dropdownRef}
-                className="absolute left-0 right-0 top-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 text-left overflow-hidden animate-fade-in divide-y divide-slate-100"
+                className="absolute left-0 right-0 top-full mt-2 bg-white border border-slate-200 rounded-xl shadow-lg z-50 text-left overflow-hidden divide-y divide-slate-100"
               >
-                {filteredSuggestions.length > 0 && (
-                  <div>
-                    <div className="px-4 py-2 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold">
-                      <span className="flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                        Suggested Medical Inquiries
-                      </span>
-                      <span className="text-[11px] text-slate-400">Use ↑↓ or click</span>
-                    </div>
-
-                    <div className="max-h-56 overflow-y-auto divide-y divide-slate-100">
-                      {filteredSuggestions.map((sug, idx) => (
-                        <div
-                          key={sug.id}
-                          onClick={() => handleSelectSuggestion(sug)}
-                          className={`p-3 sm:px-4 sm:py-2.5 cursor-pointer transition-colors flex items-center justify-between gap-3 ${
-                            selectedIndex === idx ? "bg-indigo-50/80" : "hover:bg-slate-50"
-                          }`}
-                        >
-                          <div className="flex items-start gap-2.5 min-w-0">
-                            <span className="text-base mt-0.5 shrink-0">{sug.icon || "🩺"}</span>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                                  {sug.label}
-                                </span>
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                  {sug.healthBody}
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                                {sug.description}
-                              </p>
-                            </div>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-slate-400 self-center shrink-0" />
+                <div className="p-2 max-h-56 overflow-y-auto">
+                  {filteredSuggestions.map((sug, idx) => (
+                    <div
+                      key={sug.id}
+                      onClick={() => handleSelectSuggestion(sug)}
+                      className={`px-3 py-2 rounded-lg cursor-pointer transition-colors flex items-center justify-between gap-3 ${
+                        selectedIndex === idx ? "bg-indigo-50" : "hover:bg-slate-50"
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900 truncate">
+                            {sug.label}
+                          </span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                            {sug.healthBody}
+                          </span>
                         </div>
-                      ))}
+                        <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                          {sug.description}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     </div>
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Query Validation Component */}
-            <div className="mt-3 text-left">
+            <div className="mt-2 text-left">
               <QueryValidationComponent
                 query={query}
+                compact={true}
                 onApplyCorrection={(corrected) => {
                   setQuery(corrected);
                   handleSearch(corrected);
@@ -626,76 +484,33 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Quick-Start Example Prompt Cards */}
-          <div className="text-left mt-8 max-w-3xl mx-auto">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                Featured Clinical Scenarios:
-              </span>
-              <button
-                type="button"
-                onClick={() => setPrimaryView("wiki")}
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
-              >
-                <span>Browse 600 Monograph Library</span>
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[
-                {
-                  icon: "💊",
-                  title: "Stage 2 Hypertension",
-                  desc: "First-line medication options with kidney protection (microalbuminuria)",
-                  query: "What are the first-line medication options for stage 2 hypertension with microalbuminuria?",
-                  badge: "ACC/AHA"
-                },
-                {
-                  icon: "🚨",
-                  title: "Acute Chest Pain",
-                  desc: "Substernal crushing chest pain radiating to left arm (Emergency triage test)",
-                  query: "I have severe crushing substernal chest pain, cold sweats, and difficulty breathing",
-                  badge: "Emergency Intercept"
-                },
-                {
-                  icon: "🩸",
-                  title: "Type 2 Diabetes & SGLT2i",
-                  desc: "Cardiorenal protection with SGLT2 inhibitors and GLP-1 receptor agonists",
-                  query: "Semaglutide cardiovascular outcomes and titration schedule in Type 2 Diabetes",
-                  badge: "ADA 2024"
-                },
-                {
-                  icon: "🫁",
-                  title: "Asthma Controller Therapy",
-                  desc: "Recommended inhaler regimens and SMART protocol for mild-to-moderate asthma",
-                  query: "What is the recommended inhaler approach for mild to moderate asthma?",
-                  badge: "GINA Guideline"
-                }
-              ].map((item, idx) => (
+          {/* Curated Prompt Cards (2x2 Clean Grid) */}
+          <div className="text-left mt-8">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-3">
+              Explore Common Clinical Scenarios:
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {featuredQueries.map((item, idx) => (
                 <div
                   key={idx}
                   onClick={() => {
                     setQuery(item.query);
                     handleSearch(item.query);
                   }}
-                  className="p-3.5 bg-white rounded-2xl border border-slate-200/90 hover:border-indigo-400 hover:shadow-md cursor-pointer transition-all group flex items-start gap-3"
+                  className="p-3.5 rounded-xl bg-white border border-slate-200/80 hover:border-indigo-300 hover:shadow-xs cursor-pointer transition-all flex items-start gap-3 group"
                 >
-                  <div className="p-2.5 rounded-xl bg-slate-50 group-hover:bg-indigo-50 text-xl shrink-0 transition-colors">
-                    {item.icon}
-                  </div>
+                  <span className="text-lg shrink-0 mt-0.5">{item.icon}</span>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
                         {item.title}
                       </span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 group-hover:bg-indigo-100 group-hover:text-indigo-700 transition-colors shrink-0">
-                        {item.badge}
+                      <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+                        {item.tag}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500 line-clamp-1 mt-1 leading-relaxed">
-                      {item.desc}
+                    <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                      {item.subtitle}
                     </p>
                   </div>
                 </div>
@@ -703,439 +518,100 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 3 Production Trust Banners */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl mx-auto mt-8 text-left">
-            <div className="p-3.5 rounded-xl bg-white/70 border border-slate-200/80 flex items-start gap-2.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-xs font-bold text-slate-900">Zero-Hallucination Safe</h4>
-                <p className="text-[11px] text-slate-500 mt-0.5">Refuses to guess when evidence confidence is &lt; 0.50, asking clarifying questions.</p>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-white/70 border border-slate-200/80 flex items-start gap-2.5">
-              <Award className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-xs font-bold text-slate-900">Oxford CEBM Levels 1–5</h4>
-                <p className="text-[11px] text-slate-500 mt-0.5">Hybrid BM25 + dense search mathematically fused via Reciprocal Rank Fusion.</p>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-white/70 border border-slate-200/80 flex items-start gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-xs font-bold text-slate-900">HIPAA Compliant & Tested</h4>
-                <p className="text-[11px] text-slate-500 mt-0.5">De-identified PII scrubbing and 96 automated tests passing in &lt; 29s.</p>
-              </div>
-            </div>
+          {/* Minimalist Trust Badges */}
+          <div className="flex flex-wrap items-center justify-center gap-6 mt-12 text-xs text-slate-500">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>Zero-Hallucination Guardrails</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Activity className="w-4 h-4 text-indigo-600" />
+              <span>Oxford CEBM Level 1-5 Ranking</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Lock className="w-4 h-4 text-slate-600" />
+              <span>HIPAA Safe Harbor De-identification</span>
+            </span>
           </div>
         </section>
-      ) : (
-        /* ================= COMPACT SEARCH & ACTIVE TOPIC HEADING VIEW ================= */
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
-          {/* Compact Refinement Search Bar */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 mb-4">
-            <div className="relative flex-1">
-              {/* Compact Search Scope Selector */}
-              <div className="flex items-center gap-1.5 mb-2">
-                <button
-                  type="button"
-                  onClick={() => setSearchTarget("all")}
-                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all ${
-                    searchTarget === "all"
-                      ? "bg-indigo-600 text-white shadow-2xs"
-                      : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200"
-                  }`}
-                >
-                  ✨ Universal
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSearchTarget("wiki")}
-                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all flex items-center gap-1 ${
-                    searchTarget === "wiki"
-                      ? "bg-indigo-600 text-white shadow-2xs"
-                      : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200"
-                  }`}
-                >
-                  <BookOpen className="w-3 h-3" />
-                  <span>Medical Wiki (600)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSearchTarget("assistant")}
-                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all flex items-center gap-1 ${
-                    searchTarget === "assistant"
-                      ? "bg-indigo-600 text-white shadow-2xs"
-                      : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200"
-                  }`}
-                >
-                  <Sparkles className="w-3 h-3" />
-                  <span>AI Assistant</span>
-                </button>
-              </div>
+      ) : null}
 
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSearch();
-                }}
-                className="relative flex items-center w-full h-12 bg-white rounded-xl border border-slate-200 focus-within:border-indigo-600 focus-within:ring-3 focus-within:ring-indigo-100 shadow-xs transition-all"
-              >
-                <div className="absolute left-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Search className="w-4 h-4" />
-                </div>
-
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onFocus={() => setIsFocused(true)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={searchPlaceholder}
-                  className="w-full h-full pl-10 pr-28 bg-transparent text-slate-900 placeholder:text-slate-400 text-sm outline-none font-normal"
-                />
-
-                <div className="absolute right-1.5 flex items-center gap-1">
-                  {query && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setQuery("");
-                        inputRef.current?.focus();
-                      }}
-                      className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                      title="Clear search input"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={loading || !query.trim()}
-                    className="px-4 py-1.5 h-9 rounded-lg bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-semibold text-xs transition-all shadow-2xs disabled:opacity-50 flex items-center gap-1.5"
-                  >
-                    {loading ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>Searching</span>
-                      </>
-                    ) : (
-                      <span>Search</span>
-                    )}
-                  </button>
-                </div>
-              </form>
-
-              {/* Autocomplete Dropdown in Compact View with Instant Wiki Card & 133k+ Taxonomy */}
-              {isFocused && (filteredSuggestions.length > 0 || taxonomyResults.length > 0) && (
-                <div
-                  ref={dropdownRef}
-                  className="absolute left-0 right-0 top-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 text-left overflow-hidden animate-fade-in divide-y divide-slate-100"
-                >
-                  {filteredSuggestions.length > 0 && (
-                    <>
-                      {/* Instant Wiki Knowledge Card Preview */}
-                      <div className="p-3 bg-gradient-to-r from-indigo-50/90 via-purple-50/70 to-blue-50/60 border-b border-indigo-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-                        <div className="flex items-start gap-2.5">
-                          <div className="p-1.5 bg-white text-indigo-600 rounded-xl shadow-2xs border border-indigo-100 text-sm shrink-0">
-                            {filteredSuggestions[0].icon || "📖"}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-xs font-bold text-slate-900">
-                                {filteredSuggestions[0].label}
-                              </span>
-                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white text-indigo-700 font-bold border border-indigo-200">
-                                WikiMed Topic
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-slate-600 line-clamp-1 mt-0.5 max-w-lg">
-                              {filteredSuggestions[0].description}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenWikiTopic(filteredSuggestions[0].id.replace("sug-", ""));
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold flex items-center gap-1 shadow-2xs transition-all"
-                          >
-                            <BookOpen className="w-3 h-3" />
-                            <span>Read Wiki</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSelectSuggestion(filteredSuggestions[0]);
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-[11px] font-semibold flex items-center gap-1 shadow-2xs transition-all"
-                          >
-                            <Sparkles className="w-3 h-3 text-indigo-600" />
-                            <span>Ask AI</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="px-4 py-1.5 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
-                        <span className="flex items-center gap-1.5">
-                          <Sparkles className="w-3 h-3 text-indigo-600" />
-                          Suggested Medical Topics
-                        </span>
-                        <span className="text-[10px] text-slate-400">Click or press Enter</span>
-                      </div>
-
-                      <div className="max-h-56 overflow-y-auto divide-y divide-slate-100">
-                        {filteredSuggestions.map((sug, idx) => {
-                          const isSelected = selectedIndex === idx;
-                          return (
-                            <div
-                              key={sug.id}
-                              onClick={() => handleSelectSuggestion(sug)}
-                              className={`p-2.5 sm:px-3 sm:py-2 cursor-pointer transition-colors flex items-center justify-between gap-3 ${
-                                isSelected ? "bg-indigo-50/80" : "hover:bg-slate-50"
-                              }`}
-                            >
-                              <div className="flex items-start gap-2.5 min-w-0">
-                                <span className="text-base mt-0.5 shrink-0">{sug.icon || "🩺"}</span>
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-xs font-bold text-slate-900 truncate">
-                                      {sug.label}
-                                    </span>
-                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                      {sug.healthBody}
-                                    </span>
-                                  </div>
-                                  <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                                    {sug.description}
-                                  </p>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-1 shrink-0">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleOpenWikiTopic(sug.id.replace("sug-", ""));
-                                  }}
-                                  className="px-2 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-bold flex items-center gap-1 transition-colors"
-                                  title="Open 10-section Wiki article"
-                                >
-                                  <BookOpen className="w-3 h-3" />
-                                  <span>Wiki</span>
-                                </button>
-                                <ChevronRight className="w-3.5 h-3.5 text-slate-400 self-center" />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
-
-                  {/* Official CMS & WHO Master Taxonomy (133k+ DB) */}
-                  {taxonomyResults.length > 0 && (
-                    <div className="bg-slate-50/60">
-                      <div className="px-4 py-1.5 bg-gradient-to-r from-slate-100 via-blue-50/60 to-slate-100 border-b border-slate-200/80 flex items-center justify-between text-[11px] text-slate-700 font-bold">
-                        <span className="flex items-center gap-1.5">
-                          <Globe2 className="w-3.5 h-3.5 text-blue-600" />
-                          CMS ICD-10 & WHO ICD-11 Catalog ({taxonomyStats?.total_conditions ? `${taxonomyStats.total_conditions.toLocaleString()} conditions` : "133k+ conditions"})
-                        </span>
-                        <span className="text-[9px] text-slate-500 font-mono">FTS5 Search</span>
-                      </div>
-
-                      <div className="max-h-52 overflow-y-auto divide-y divide-slate-100">
-                        {taxonomyResults.map((tax) => (
-                          <div
-                            key={`${tax.source}-${tax.id}`}
-                            onClick={() => {
-                              setQuery(tax.title);
-                              setIsFocused(false);
-                              handleSearch(tax.title);
-                            }}
-                            className="p-2 sm:px-3 sm:py-2 cursor-pointer hover:bg-white transition-colors flex items-center justify-between gap-3 group"
-                          >
-                            <div className="flex items-start gap-2 min-w-0">
-                              <span className="text-sm mt-0.5 shrink-0">
-                                {tax.source === "CMS_ICD10" ? "🏛️" : "🌐"}
-                              </span>
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-200 text-slate-800 border border-slate-300">
-                                    {tax.code}
-                                  </span>
-                                  <span className="text-xs font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors truncate">
-                                    {tax.title}
-                                  </span>
-                                  <span
-                                    className={`px-1.5 py-0.2 rounded text-[8px] font-bold ${
-                                      tax.source === "CMS_ICD10"
-                                        ? "bg-blue-50 text-blue-700 border border-blue-200"
-                                        : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                    }`}
-                                  >
-                                    {tax.source === "CMS_ICD10" ? "CMS ICD-10" : "WHO ICD-11"}
-                                  </span>
-                                </div>
-                                <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
-                                  {tax.category || "Clinical Diagnostic Entity"}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-1 shrink-0">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setQuery(tax.title);
-                                  setIsFocused(false);
-                                  handleSearch(tax.title);
-                                }}
-                                className="px-2 py-0.5 rounded-md bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-700 hover:text-indigo-700 text-[10px] font-semibold flex items-center gap-1 transition-colors shadow-2xs"
-                              >
-                                <Sparkles className="w-3 h-3 text-indigo-500" />
-                                <span>Ask AI</span>
-                              </button>
-                              <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-indigo-500 transition-colors self-center" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Compact Real-Time Query Validation */}
-              <div className="mt-2 text-left">
-                <QueryValidationComponent
-                  query={query}
-                  compact={true}
-                  onApplyCorrection={(corrected) => {
-                    setQuery(corrected);
-                    handleSearch(corrected);
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Reset / New Search Button (Only when active topic exists) */}
-            {hasTopic && (
+      {/* ================= COMPACT REFINED TOPIC BAR (When Result is Active) ================= */}
+      {hasTopic && primaryView === "assistant" && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2 animate-fade-in">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/80 mb-6">
+            <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={handleClearTopic}
-                className="flex items-center justify-center gap-1.5 px-3.5 h-12 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all shadow-2xs whitespace-nowrap"
-                title="Clear topic and return to home"
+                className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors shadow-2xs"
+                title="Back to Home"
               >
-                <ArrowLeft className="w-4 h-4 text-slate-500" />
-                <span>New Topic</span>
+                <ArrowLeft className="w-4 h-4" />
               </button>
-            )}
-          </div>
-
-          {/* Dedicated Topic Heading Banner (Only in Assistant mode when active topic exists) */}
-          {hasTopic && primaryView === "assistant" && (
-            <div className="p-4 sm:p-5 bg-white border border-slate-200/90 rounded-2xl shadow-xs transition-all">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      Medical Topic Guide
-                    </span>
-
-                    {compareMode ? (
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
-                        <Columns3 className="w-3 h-3" />
-                        Dual Perspective Sync
-                      </span>
-                    ) : mode === "professional" ? (
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-teal-50 text-teal-700 border border-teal-200 flex items-center gap-1">
-                        <Stethoscope className="w-3 h-3" />
-                        Clinician Mode
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
-                        <HeartHandshake className="w-3 h-3" />
-                        Patient & Family Guide
-                      </span>
-                    )}
-
-                    {result?.sources && result.sources.length > 0 && (
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        {result.sources.length} Verified Sources
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Auto-Correction Notice */}
-                  {(result?.validation?.corrections_made?.length || patientResult?.validation?.corrections_made?.length) ? (
-                    <div className="mb-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 font-medium">
-                      <Wand2 className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Showing results for:</span>
-                      <span className="font-bold text-slate-900">
-                        {(result?.validation?.corrections_made || patientResult?.validation?.corrections_made || []).join(", ")}
-                      </span>
-                    </div>
-                  ) : null}
-
-                  {/* Clear & Polished Topic Heading */}
-                  <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">
-                    {activeQueryText || "Medical Search Topic"}
-                  </h2>
-                </div>
-
-                {/* Quick Health Standard Badges */}
-                <div className="flex items-center gap-2 flex-shrink-0 self-start sm:self-center">
-                  <div className="flex items-center gap-1 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-medium text-slate-600">
-                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Verified Medical Guidelines</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Switch Pills Bar */}
-              <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mr-1 whitespace-nowrap flex items-center gap-1">
-                  <Flame className="w-3 h-3 text-amber-500" /> Switch Topic:
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  {mode === "professional" ? "Clinician Protocol" : "Patient Guide"}
                 </span>
-                {popularPills.map((pill, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      setQuery(pill.query);
-                      handleSearch(pill.query);
-                    }}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-xs text-slate-600 hover:text-indigo-700 font-medium whitespace-nowrap transition-all"
-                  >
-                    <span>{pill.icon}</span>
-                    <span>{pill.label}</span>
-                  </button>
-                ))}
+                <h2 className="text-xl font-bold text-slate-900 leading-tight">
+                  {activeQueryText}
+                </h2>
               </div>
             </div>
-          )}
+
+            {/* Quick Toggle Mode on Result Screen */}
+            <div className="flex items-center gap-2 self-start sm:self-center">
+              <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCompareMode(false);
+                    setMode("patient");
+                    handleSearch(activeQueryText, "patient");
+                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                    !compareMode && mode === "patient" ? "bg-white text-indigo-700 shadow-2xs font-bold" : "text-slate-500"
+                  }`}
+                >
+                  Patient View
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCompareMode(false);
+                    setMode("professional");
+                    handleSearch(activeQueryText, "professional");
+                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                    !compareMode && mode === "professional" ? "bg-white text-teal-700 shadow-2xs font-bold" : "text-slate-500"
+                  }`}
+                >
+                  Clinician View
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCompareMode(!compareMode)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                  compareMode
+                    ? "bg-purple-600 text-white border-purple-600 shadow-xs"
+                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                }`}
+                title="Compare Patient and Clinician side-by-side"
+              >
+                <Columns3 className="w-3.5 h-3.5" />
+                <span>Compare</span>
+              </button>
+            </div>
+          </div>
         </section>
       )}
 
-      {/* Main Results & Workspace Layout */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+      {/* ================= RESULTS / WIKI / SPLIT WORKSPACE ================= */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {primaryView === "wiki" ? (
-          /* ================= PRIMARY MEDICAL WIKI COMPENDIUM VIEW ================= */
-          <div className="space-y-6 animate-fade-in">
+          <div className="py-6 animate-fade-in">
             <MedicalWikiViewer
               initialTopicId={selectedWikiTopicId}
               mode={mode === "professional" ? "clinician" : "patient"}
@@ -1146,17 +622,10 @@ export default function Home() {
                 setPrimaryView("assistant");
                 handleSearch(q);
               }}
-              onAskCopilot={(q) => {
-                setQuery(q);
-                setPrimaryView("split");
-                handleSearch(q);
-              }}
             />
           </div>
         ) : primaryView === "split" ? (
-          /* ================= SPLIT VIEW: WIKI DOSSIER + AI CO-PILOT ================= */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-fade-in">
-            {/* Left Column: Medical Wiki Viewer (7 cols) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start py-6 animate-fade-in">
             <div className="lg:col-span-7 h-[85vh]">
               <MedicalWikiViewer
                 initialTopicId={selectedWikiTopicId}
@@ -1169,105 +638,51 @@ export default function Home() {
                 }}
               />
             </div>
-
-            {/* Right Column: AI Co-Pilot Assistant Thread (5 cols) */}
             <div className="lg:col-span-5 h-[85vh] bg-white border border-slate-200 rounded-2xl shadow-xs p-4 flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between pb-3 mb-2 border-b border-slate-100 shrink-0">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-gradient-to-tr from-indigo-600 to-purple-600 text-white rounded-xl shadow-2xs">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-bold text-slate-900">AI Clinical Co-Pilot</h3>
-                    <p className="text-[10px] text-slate-500">Ask interactive reasoning questions about this condition</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPrimaryView("wiki")}
-                  className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold"
-                >
-                  Full Wiki
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                <IntegratedChatThread
-                  initialTopic={query || selectedWikiTopicId}
-                  mode={mode}
-                  response={result}
-                  activeCitation={activeCitation}
-                  onSelectCitation={handleSelectCitation}
-                />
-              </div>
+              <IntegratedChatThread
+                initialTopic={query || selectedWikiTopicId}
+                mode={mode}
+                response={result}
+                activeCitation={activeCitation}
+                onSelectCitation={handleSelectCitation}
+              />
             </div>
           </div>
         ) : loading ? (
           /* Sleek Loading State */
-          <div className="p-8 sm:p-12 bg-white border border-slate-200 rounded-2xl text-center shadow-xs animate-fade-in space-y-4 max-w-4xl mx-auto">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mx-auto text-indigo-600 shadow-xs">
-              <RefreshCw className="w-6 h-6 animate-spin text-indigo-600" />
+          <div className="p-12 bg-white border border-slate-200/80 rounded-2xl text-center shadow-xs animate-fade-in space-y-4 max-w-lg mx-auto my-12">
+            <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center mx-auto text-indigo-600">
+              <RefreshCw className="w-5 h-5 animate-spin" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900">
-                Grounding Evidence & Synthesizing Clinical Truth...
+              <h3 className="text-base font-bold text-slate-900">
+                Synthesizing Evidence & Safety Guardrails...
               </h3>
-              <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-                Retrieving WHO Guidelines, Oxford CEBM clinical studies, and generating dual-perspective medical summaries.
+              <p className="text-xs text-slate-500 mt-1">
+                Cross-referencing Oxford CEBM guidelines with deterministic clinical safety rules.
               </p>
-            </div>
-            <div className="flex justify-center gap-1.5 pt-2">
-              <span className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: "0ms" }} />
-              <span className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: "150ms" }} />
-              <span className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: "300ms" }} />
             </div>
           </div>
         ) : compareMode && result && patientResult ? (
-          /* Side-by-Side Dual-Perspective Synchronizer */
-          <div className="space-y-6">
+          /* Dual Perspective Compare View */
+          <div className="space-y-6 pb-16">
             {result?.triage_alert && (
-              <div className="max-w-4xl mx-auto my-3">
+              <div className="max-w-4xl mx-auto">
                 <TriageBanner alert={result.triage_alert} />
               </div>
             )}
-            <div className="p-4 bg-gradient-to-r from-indigo-50 via-white to-teal-50 border border-slate-200 rounded-2xl text-center text-xs sm:text-sm text-slate-700 shadow-2xs">
-              <span className="font-bold text-indigo-900">Side-by-Side Dual Perspective:</span> Grounded in the identical peer-reviewed evidence set across plain English (patient) and clinical register (physician).
-            </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <PatientView
-                  response={patientResult}
-                  activeCitation={activeCitation}
-                  onSelectCitation={handleSelectCitation}
-                  onSelectElaboration={(q) => {
-                    setQuery(q);
-                    handleSearch(q);
-                  }}
-                />
-              </div>
-              <div className="space-y-4">
-                <ClinicianView
-                  response={result}
-                  activeCitation={activeCitation}
-                  onSelectCitation={handleSelectCitation}
-                  onSelectElaboration={(q) => {
-                    setQuery(q);
-                    handleSearch(q);
-                  }}
-                />
-              </div>
+              <PatientView
+                response={patientResult}
+                activeCitation={activeCitation}
+                onSelectCitation={handleSelectCitation}
+              />
+              <ClinicianView
+                response={result}
+                activeCitation={activeCitation}
+                onSelectCitation={handleSelectCitation}
+              />
             </div>
-
-            {/* Inline Integrated Conversational Chatbot & Follow-ups in Compare Mode */}
-            <IntegratedChatThread
-              initialTopic={activeQueryText}
-              mode={mode}
-              response={result}
-              activeCitation={activeCitation}
-              onSelectCitation={handleSelectCitation}
-            />
-
-            {/* Shared Evidence Repository */}
             <div className="mt-8">
               <CitationDrawer
                 sources={result.sources}
@@ -1277,88 +692,25 @@ export default function Home() {
             </div>
           </div>
         ) : result ? (
-          /* Standard Single-Perspective + Evidence Drawer Layout */
-          <div className="space-y-6">
-            {result?.triage_alert && (
-              <div className="max-w-4xl mx-auto my-3">
-                <TriageBanner alert={result.triage_alert} />
-              </div>
-            )}
+          /* Single Perspective + Evidence Drawer Layout */
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start pb-16">
+            <div className="lg:col-span-8 space-y-6">
+              {result?.triage_alert && <TriageBanner alert={result.triage_alert} />}
 
-            {/* Verified WikiMed Grounded Dossier Callout Card */}
-            {matchedWikiTopic && (
-              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-50/90 via-purple-50/70 to-blue-50/80 border border-indigo-200/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs animate-fade-in">
-                <div className="flex items-start gap-3.5">
-                  <div className="p-2.5 bg-gradient-to-tr from-indigo-600 to-purple-600 text-white rounded-xl shadow-xs text-base shrink-0">
-                    <BookOpen className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-white text-indigo-700 border border-indigo-200">
-                        WikiMed Grounded Dossier
-                      </span>
-                      <span className="text-sm font-extrabold text-slate-900">
-                        {matchedWikiTopic.label}
-                      </span>
-                      <span className="text-xs px-2 py-0.5 rounded-md bg-emerald-100/70 text-emerald-800 font-semibold border border-emerald-200">
-                        {matchedWikiTopic.category}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
-                      Full 10-section encyclopedic breakdown available: physical analogies, ICD-10 criteria, GDMT titrations, and landmark trial DOIs.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenWikiTopic(matchedWikiTopic.id.replace("sug-", ""))}
-                    className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
-                  >
-                    <BookOpen className="w-3.5 h-3.5" />
-                    <span>Read 10-Section Wiki</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleOpenWikiSplit(matchedWikiTopic.id.replace("sug-", ""), activeQueryText)}
-                    className="px-3 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold transition-all shadow-2xs flex items-center gap-1.5"
-                    title="Open Co-Pilot Split View"
-                  >
-                    <Columns3 className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Co-Pilot Split</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              {/* Main AI Response Pane */}
-              <div className="lg:col-span-8 space-y-6">
-                {mode === "professional" ? (
-                  <ClinicianView
-                    response={result}
-                    activeCitation={activeCitation}
-                    onSelectCitation={handleSelectCitation}
-                    onSelectElaboration={(q) => {
-                      setQuery(q);
-                      handleSearch(q);
-                    }}
-                  />
+              {mode === "professional" ? (
+                <ClinicianView
+                  response={result}
+                  activeCitation={activeCitation}
+                  onSelectCitation={handleSelectCitation}
+                />
               ) : (
                 <PatientView
                   response={result}
                   activeCitation={activeCitation}
                   onSelectCitation={handleSelectCitation}
-                  onSelectElaboration={(q) => {
-                    setQuery(q);
-                    handleSearch(q);
-                  }}
                 />
               )}
 
-              {/* Inline Integrated Conversational Chatbot & Follow-ups */}
               <IntegratedChatThread
                 initialTopic={activeQueryText}
                 mode={mode}
@@ -1368,7 +720,7 @@ export default function Home() {
               />
             </div>
 
-            {/* Evidence & Citations Sidebar */}
+            {/* Evidence Sidebar */}
             <div className="lg:col-span-4 sticky top-24">
               <CitationDrawer
                 sources={result.sources}
@@ -1377,25 +729,15 @@ export default function Home() {
               />
             </div>
           </div>
-        </div>
-      ) : null}
-    </section>
+        ) : null}
+      </main>
 
-      {/* Footer with International Health Bodies & Oxford CEBM Standards */}
-      <footer className="max-w-7xl mx-auto px-4 mt-20 pt-8 border-t border-slate-200 text-center text-xs text-slate-500 space-y-3">
-        <div className="flex flex-wrap items-center justify-center gap-3 text-slate-600 font-semibold">
-          <span>WHO World Health Organization</span>
-          <span>•</span>
-          <span>Peer-Reviewed Clinical Evidence</span>
-          <span>•</span>
-          <span>ADA / AHA / NICE / ESC Guidelines</span>
-          <span>•</span>
-          <span>Emergency Triage Safety</span>
-        </div>
-        <p className="text-slate-400 max-w-2xl mx-auto leading-relaxed">
-          AegisMed is an evidence-based clinical and patient decision-support tool. All summaries are grounded in peer-reviewed clinical literature. Not a substitute for professional in-person medical diagnosis.
+      {/* ================= REFINED FOOTER ================= */}
+      <footer className="border-t border-slate-200/80 mt-20 py-8 bg-white/50 text-center text-xs text-slate-400">
+        <p className="max-w-xl mx-auto leading-relaxed">
+          AegisMed is an evidence-based clinical decision support tool grounded in peer-reviewed medical literature. Not a substitute for formal in-person clinical diagnosis.
         </p>
       </footer>
-    </main>
+    </div>
   );
 }
