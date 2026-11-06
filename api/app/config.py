@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     GEMINI_MODEL: str = "gemini-flash-latest"
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.2"
-    OLLAMA_TIMEOUT: float = 8.0
+    OLLAMA_TIMEOUT: float = 2.0
 
     # Qdrant Vector & Document Database (Local or Cloud)
     QDRANT_HOST: str = "localhost"

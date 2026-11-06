@@ -17,6 +17,7 @@ EUROPE_PMC_URL = "https://www.ebi.ac.uk/europepmc/webservices/rest/search"
 
 # Thread-safe persistent query cache with 24-hour TTL (query -> (timestamp, docs))
 _PUBMED_CACHE: Dict[str, Tuple[float, List[Dict[str, Any]]]] = {}
+_PUBMED_API_BLOCKED_UNTIL: float = 0.0
 
 DOMAIN_MAP = {
     "CARDIOVASCULAR": [
@@ -222,6 +223,7 @@ class PubMedImporter:
 
     def _search_europe_pmc_sync(self, query: str, max_results: int = 5) -> List[Dict[str, Any]]:
         """Queries Europe PMC REST API synchronously for meta-analyses, RCTs, and clinical guidelines."""
+        global _PUBMED_API_BLOCKED_UNTIL
         try:
             params = {
                 "query": f'"{query}" (SRC:MED) AND (HAS_ABSTRACT:Y) AND (PUB_TYPE:"Randomized Controlled Trial" OR PUB_TYPE:"Meta-Analysis" OR PUB_TYPE:"Systematic Review" OR PUB_TYPE:"Guideline")',
@@ -229,7 +231,7 @@ class PubMedImporter:
                 "pageSize": str(max_results),
                 "resultType": "core"
             }
-            with httpx.Client(timeout=httpx.Timeout(2.0, connect=1.0)) as client:
+            with httpx.Client(timeout=httpx.Timeout(1.5, connect=0.6)) as client:
                 resp = client.get(EUROPE_PMC_URL, params=params)
                 if resp.status_code == 200:
                     data = resp.json()
@@ -261,7 +263,7 @@ class PubMedImporter:
                     if docs:
                         return docs
         except Exception:
-            pass
+            _PUBMED_API_BLOCKED_UNTIL = time.time() + 60.0
         return []
 
     def search_and_fetch_disease_papers_sync(
@@ -270,11 +272,12 @@ class PubMedImporter:
         max_results: int = 5
     ) -> List[Dict[str, Any]]:
         """Synchronously queries Europe PMC and PubMed with TTL caching and fallback."""
+        global _PUBMED_API_BLOCKED_UNTIL
         cache_key = disease_name.strip().lower()
         now = time.time()
         import os
         from app.config import settings
-        if getattr(settings, "is_offline", False) or getattr(settings, "OFFLINE_MODE", False) or os.getenv("OFFLINE_MODE") in ("1", "true") or "PYTEST_CURRENT_TEST" in os.environ:
+        if getattr(settings, "is_offline", False) or getattr(settings, "OFFLINE_MODE", False) or os.getenv("OFFLINE_MODE") in ("1", "true") or "PYTEST_CURRENT_TEST" in os.environ or now < _PUBMED_API_BLOCKED_UNTIL:
             fb = self._get_fallback_evidence(disease_name, max_results)
             _PUBMED_CACHE[cache_key] = (now, fb)
             return fb
@@ -303,7 +306,7 @@ class PubMedImporter:
                 "tool": self.tool_name,
                 "email": self.email,
             }
-            with httpx.Client(timeout=httpx.Timeout(2.0, connect=1.0)) as client:
+            with httpx.Client(timeout=httpx.Timeout(1.5, connect=0.6)) as client:
                 resp = client.get(NCBI_ESEARCH_URL, params=params)
                 if resp.status_code == 200:
                     id_list = resp.json().get("esearchresult", {}).get("idlist", [])
@@ -322,7 +325,7 @@ class PubMedImporter:
                                 _PUBMED_CACHE[cache_key] = (now, parsed)
                                 return parsed
         except Exception:
-            pass
+            _PUBMED_API_BLOCKED_UNTIL = time.time() + 60.0
 
         # 3. Fallback to local curated evidence store
         fb = self._get_fallback_evidence(disease_name, max_results)
